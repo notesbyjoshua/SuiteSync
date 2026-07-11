@@ -15,16 +15,23 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     <div class="auth-icon">✦</div>
     <span class="step-label">VERIFY YOUR IDENTITY</span>
     <h2>Sign in with your application email.</h2>
-    <p>We’ll email you a secure sign-in link. Use the same email address associated with your YYGS application.</p>
+    <p>Use the same email address associated with your YYGS application and your SuiteSync password.</p>
     <form data-auth-form>
       <label class="field">
         <span>Application email</span>
         <input type="email" name="auth_email" autocomplete="email" required maxlength="254" placeholder="you@example.com" />
       </label>
-      <button class="button primary auth-button" type="submit" data-auth-submit>Send secure sign-in link <span>→</span></button>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" name="auth_password" autocomplete="current-password" required minlength="8" maxlength="72" placeholder="At least 8 characters" />
+      </label>
+      <div class="auth-actions">
+        <button class="button primary auth-button" type="submit" data-auth-submit data-auth-action="signin">Sign in <span>→</span></button>
+        <button class="button secondary auth-button" type="submit" data-auth-submit data-auth-action="signup">Create account</button>
+      </div>
     </form>
     <div class="auth-message" data-auth-message role="status" hidden></div>
-    <p class="privacy-note">No password needed. The link expires automatically and can only be used to access your account.</p>
+    <p class="privacy-note">Your password is handled securely by Supabase and is never stored by SuiteSync.</p>
   </section>
 
   <div class="survey-layout" data-survey-layout hidden>
@@ -198,7 +205,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     const surveyLayout = root.querySelector('[data-survey-layout]');
     const authForm = root.querySelector('[data-auth-form]');
     const authMessage = root.querySelector('[data-auth-message]');
-    const authSubmit = root.querySelector('[data-auth-submit]');
+    const authButtons = [...root.querySelectorAll('[data-auth-submit]')];
     const url = root.dataset.supabaseUrl;
     const key = root.dataset.supabaseKey;
     const supabase = url && key ? createClient(url, key) : null;
@@ -229,7 +236,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     if (!supabase) {
       setAuthMessage('Supabase is not configured yet. Add the public project URL and publishable key to enable sign-in.', 'error');
-      if (authSubmit instanceof HTMLButtonElement) authSubmit.disabled = true;
+      authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = true; });
     } else {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) showAuthenticatedSurvey(session.user);
@@ -242,25 +249,30 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     authForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (!supabase || !(authForm instanceof HTMLFormElement) || !(authSubmit instanceof HTMLButtonElement)) return;
+      if (!supabase || !(authForm instanceof HTMLFormElement)) return;
       const emailField = authForm.elements.namedItem('auth_email');
-      if (!(emailField instanceof HTMLInputElement) || !emailField.reportValidity()) return;
-      authSubmit.disabled = true;
-      authSubmit.textContent = 'Sending…';
+      const passwordField = authForm.elements.namedItem('auth_password');
+      if (!(emailField instanceof HTMLInputElement) || !(passwordField instanceof HTMLInputElement) || !authForm.reportValidity()) return;
+      const submitter = event instanceof SubmitEvent ? event.submitter : null;
+      const action = submitter instanceof HTMLButtonElement ? submitter.dataset.authAction : 'signin';
+      authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = true; });
       setAuthMessage();
-      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}survey/`;
-      const { error } = await supabase.auth.signInWithOtp({
-        email: emailField.value.trim().toLowerCase(),
-        options: { emailRedirectTo: redirectTo }
-      });
+      const credentials = { email: emailField.value.trim().toLowerCase(), password: passwordField.value };
+      const { data, error } = action === 'signup'
+        ? await supabase.auth.signUp(credentials)
+        : await supabase.auth.signInWithPassword(credentials);
       if (error) {
-        setAuthMessage('We couldn’t send the sign-in link. Check the email and try again.', 'error');
-        authSubmit.disabled = false;
-        authSubmit.innerHTML = 'Send secure sign-in link <span>→</span>';
+        const copy = action === 'signup'
+          ? (error.message.toLowerCase().includes('already') ? 'An account already exists for this email. Try signing in instead.' : error.message)
+          : 'The email or password is incorrect.';
+        setAuthMessage(copy, 'error');
+        authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = false; });
         return;
       }
-      setAuthMessage('Check your inbox. Open the link in the email to continue your survey.', 'success');
-      authSubmit.textContent = 'Link sent';
+      if (action === 'signup' && !data.session) {
+        setAuthMessage('Your Supabase project still requires email confirmation. Disable “Confirm email” in Supabase to use password-only registration.', 'error');
+        authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = false; });
+      }
     });
 
     root.querySelector('[data-sign-out]')?.addEventListener('click', async () => {

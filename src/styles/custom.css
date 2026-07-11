@@ -154,7 +154,9 @@
 .auth-card h2 { font-size: clamp(1.8rem, 5vw, 2.6rem); letter-spacing: -0.04em; margin: 0.7rem 0 1rem; }
 .auth-card > p { color: var(--sl-color-gray-2); line-height: 1.65; }
 .auth-card form { margin-top: 1.8rem; text-align: left; }
-.auth-button { justify-content: space-between; margin-top: 1.2rem; width: 100%; }
+.auth-actions { display: grid; gap: 0.7rem; margin-top: 1.2rem; }
+.auth-button { justify-content: space-between; margin: 0 !important; width: 100%; }
+.auth-actions .button.secondary { justify-content: center; }
 .auth-message { border-radius: 0.7rem; font-size: 0.85rem; margin-top: 1rem; padding: 0.9rem; text-align: left; }
 .auth-message[data-kind='success'] { background: color-mix(in srgb, #34d399 12%, transparent); border: 1px solid #059669; color: #a7f3d0; }
 .auth-message[data-kind='error'] { background: #450a0a; border: 1px solid #b91c1c; color: #fecaca; }
