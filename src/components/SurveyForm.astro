@@ -75,9 +75,48 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
           <label class="field"><span>Preferred name</span><input name="preferred_name" autocomplete="given-name" required maxlength="80" placeholder="What should your suitemates call you?" /></label>
           <label class="field"><span>Verified application email</span><input name="email" type="email" autocomplete="email" required readonly data-auth-email /></label>
           <label class="field"><span>YYGS session</span><select name="session" required><option value="">Select a session</option><option>Innovations in Science & Technology</option><option>Literature, Philosophy & Culture</option><option>Politics, Law & Economics</option><option>Solving Global Challenges</option></select></label>
-          <label class="field"><span>Age when the session begins</span><input name="age" type="number" min="15" max="18" required placeholder="16" /></label>
+          <label class="field"><span>How old are you?</span><input name="age" type="number" min="15" max="18" required placeholder="16" /><small>You will be given a roommate within two years of your age unless specified otherwise.</small></label>
         </div>
-        <label class="field"><span>Pronouns <small>(optional)</small></span><input name="pronouns" maxlength="60" placeholder="e.g. she/her, he/him, they/them" /></label>
+        <fieldset class="question-block compact-options">
+          <legend>What is your biological sex?</legend>
+          <div class="choice-grid">
+            <label class="choice-chip"><input type="radio" name="biological_sex" value="male" required /><span>Male</span></label>
+            <label class="choice-chip"><input type="radio" name="biological_sex" value="female" /><span>Female</span></label>
+            <label class="choice-chip"><input type="radio" name="biological_sex" value="non_binary" /><span>Non-binary</span></label>
+            <label class="choice-chip"><input type="radio" name="biological_sex" value="other" /><span>Other</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="question-block compact-options">
+          <legend>What are your pronouns?</legend>
+          <div class="choice-grid">
+            <label class="choice-chip"><input type="radio" name="pronouns" value="he/him" required /><span>He/him</span></label>
+            <label class="choice-chip"><input type="radio" name="pronouns" value="he/they" /><span>He/they</span></label>
+            <label class="choice-chip"><input type="radio" name="pronouns" value="she/her" /><span>She/her</span></label>
+            <label class="choice-chip"><input type="radio" name="pronouns" value="she/they" /><span>She/they</span></label>
+            <label class="choice-chip"><input type="radio" name="pronouns" value="they/them" /><span>They/them</span></label>
+            <label class="choice-chip"><input type="radio" name="pronouns" value="other" /><span>Other</span></label>
+            <label class="choice-chip"><input type="radio" name="pronouns" value="prefer_not_to_say" /><span>Prefer not to say</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="question-block compact-options">
+          <legend>What is your gender identity?</legend>
+          <div class="choice-grid">
+            <label class="choice-chip"><input type="radio" name="gender_identity" value="male" required /><span>Male</span></label>
+            <label class="choice-chip"><input type="radio" name="gender_identity" value="female" /><span>Female</span></label>
+            <label class="choice-chip"><input type="radio" name="gender_identity" value="other" /><span>Other</span></label>
+            <label class="choice-chip"><input type="radio" name="gender_identity" value="prefer_not_to_say" /><span>Prefer not to say</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="question-block compact-options">
+          <legend>What is your ethnicity?</legend>
+          <div class="choice-grid">
+            <label class="choice-chip"><input type="radio" name="ethnicity" value="white" required /><span>White</span></label>
+            <label class="choice-chip"><input type="radio" name="ethnicity" value="black" /><span>Black</span></label>
+            <label class="choice-chip"><input type="radio" name="ethnicity" value="east_asian" /><span>East Asian</span></label>
+            <label class="choice-chip"><input type="radio" name="ethnicity" value="other" /><span>Other</span></label>
+          </div>
+        </fieldset>
+        <label class="field"><span>Do you have a specific religious belief? <small>(optional)</small></span><select name="religious_belief"><option value="">Select an option</option><option value="christian">Christian</option><option value="muslim">Muslim</option><option value="hindu">Hindu</option><option value="sikh">Sikh</option><option value="jewish">Jewish</option><option value="buddhist">Buddhist</option><option value="atheist">Atheist</option><option value="non_denomination">Non-denominational</option><option value="agnostic">Agnostic</option><option value="other">Other</option><option value="prefer_not_to_say">Prefer not to say</option></select></label>
       </section>
 
       <section class="survey-section" data-section="2" hidden>
@@ -261,7 +300,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       if (!(form instanceof HTMLFormElement)) return;
       const data = new FormData(form);
       const labels = {
-        preferred_name: 'Preferred name', email: 'Application email', session: 'YYGS session', age: 'Age', pronouns: 'Pronouns',
+        preferred_name: 'Preferred name', email: 'Application email', session: 'YYGS session', age: 'Age', biological_sex: 'Biological sex', pronouns: 'Pronouns', gender_identity: 'Gender identity', ethnicity: 'Ethnicity', religious_belief: 'Religious belief',
         sleep_schedule: 'Daily rhythm', tidiness: 'Shared-space tidiness', recharge_style: 'Recharge style',
         suite_priorities: 'Suite priorities', conflict_style: 'Handling conflict', additional_notes: 'Additional notes'
       };
@@ -348,7 +387,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         email: authenticatedUser.email.toLowerCase(),
         session: String(data.get('session') ?? ''),
         age: Number(data.get('age')),
-        pronouns: String(data.get('pronouns') ?? '').trim() || null,
+        biological_sex: String(data.get('biological_sex') ?? ''),
+        pronouns: String(data.get('pronouns') ?? ''),
+        gender_identity: String(data.get('gender_identity') ?? ''),
+        ethnicity: String(data.get('ethnicity') ?? ''),
+        religious_belief: String(data.get('religious_belief') ?? '') || null,
         sleep_schedule: String(data.get('sleep_schedule') ?? ''),
         tidiness: Number(data.get('tidiness')),
         recharge_style: String(data.get('recharge_style') ?? ''),
