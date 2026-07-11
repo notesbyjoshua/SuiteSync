@@ -157,6 +157,7 @@
 .auth-actions { display: grid; gap: 0.7rem; margin-top: 1.2rem; }
 .auth-button { justify-content: space-between; margin: 0 !important; width: 100%; }
 .auth-actions .button.secondary { justify-content: center; }
+.text-button { background: none; border: 0; color: var(--sl-color-accent-high); cursor: pointer; display: block; font: inherit; font-size: 0.78rem; margin: 1rem auto 0; text-decoration: underline; text-underline-offset: 0.2rem; }
 .auth-message { border-radius: 0.7rem; font-size: 0.85rem; margin-top: 1rem; padding: 0.9rem; text-align: left; }
 .auth-message[data-kind='success'] { background: color-mix(in srgb, #34d399 12%, transparent); border: 1px solid #059669; color: #a7f3d0; }
 .auth-message[data-kind='error'] { background: #450a0a; border: 1px solid #b91c1c; color: #fecaca; }
