@@ -25,10 +25,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         <span>Password</span>
         <input type="password" name="auth_password" autocomplete="current-password" required minlength="8" maxlength="72" placeholder="At least 8 characters" />
       </label>
-      <div class="auth-actions">
-        <button class="button primary auth-button" type="submit" data-auth-submit data-auth-action="signin">Sign in <span>→</span></button>
-        <button class="button secondary auth-button" type="submit" data-auth-submit data-auth-action="signup">Create account</button>
-      </div>
+      <div class="auth-actions"><button class="button primary auth-button" type="submit" data-auth-submit>Sign in <span>→</span></button></div>
     </form>
     <div class="auth-message" data-auth-message role="status" hidden></div>
     <p class="privacy-note">Your password is handled securely by Supabase and is never stored by SuiteSync.</p>
@@ -253,25 +250,14 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const emailField = authForm.elements.namedItem('auth_email');
       const passwordField = authForm.elements.namedItem('auth_password');
       if (!(emailField instanceof HTMLInputElement) || !(passwordField instanceof HTMLInputElement) || !authForm.reportValidity()) return;
-      const submitter = event instanceof SubmitEvent ? event.submitter : null;
-      const action = submitter instanceof HTMLButtonElement ? submitter.dataset.authAction : 'signin';
       authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = true; });
       setAuthMessage();
       const credentials = { email: emailField.value.trim().toLowerCase(), password: passwordField.value };
-      const { data, error } = action === 'signup'
-        ? await supabase.auth.signUp(credentials)
-        : await supabase.auth.signInWithPassword(credentials);
+      const { error } = await supabase.auth.signInWithPassword(credentials);
       if (error) {
-        const copy = action === 'signup'
-          ? (error.message.toLowerCase().includes('already') ? 'An account already exists for this email. Try signing in instead.' : error.message)
-          : 'The email or password is incorrect.';
-        setAuthMessage(copy, 'error');
+        setAuthMessage('The email or password is incorrect. Contact a SuiteSync administrator if you need an account.', 'error');
         authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = false; });
         return;
-      }
-      if (action === 'signup' && !data.session) {
-        setAuthMessage('Your Supabase project still requires email confirmation. Disable “Confirm email” in Supabase to use password-only registration.', 'error');
-        authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = false; });
       }
     });
 

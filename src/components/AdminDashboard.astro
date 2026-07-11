@@ -34,6 +34,16 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     </section>
 
     <section class="admin-panel">
+      <div class="panel-heading"><div><span class="step-label">ACCOUNTS</span><h2>Create applicant accounts</h2></div></div>
+      <form class="create-suite-form create-account-form" data-create-account>
+        <label class="field"><span>Applicant email</span><input name="email" type="email" required autocomplete="off" placeholder="applicant@example.com" /></label>
+        <label class="field"><span>Temporary password</span><input name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="At least 8 characters" /></label>
+        <button class="button primary" type="submit">Create account</button>
+      </form>
+      <p class="admin-helper">Give the password to the applicant securely. Their email is marked confirmed, so no email link is sent.</p>
+    </section>
+
+    <section class="admin-panel">
       <div class="panel-heading"><div><span class="step-label">SUITES</span><h2>Create and monitor suites</h2></div></div>
       <form class="create-suite-form" data-create-suite>
         <label class="field"><span>Suite name</span><input name="name" required maxlength="80" placeholder="e.g. Davenport 201" /></label>
@@ -132,6 +142,15 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     root.querySelectorAll('[data-admin-signout]').forEach(button => button.addEventListener('click', () => client?.auth.signOut()));
     root.querySelector('[data-response-filter]')?.addEventListener('change', renderResponses);
+
+    root.querySelector('[data-create-account]')?.addEventListener('submit', async (event) => {
+      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
+      const form = event.currentTarget; if (!form.reportValidity()) return;
+      const data = new FormData(form);
+      const { error } = await client.functions.invoke('admin-create-user', { body: { email: String(data.get('email') ?? '').trim().toLowerCase(), password: String(data.get('password') ?? '') } });
+      if (error) { message('Could not create the account. It may already exist, or the password may not meet the project requirements.'); return; }
+      form.reset(); message('Applicant account created.', 'success');
+    });
 
     root.querySelector('[data-create-suite]')?.addEventListener('submit', async (event) => {
       event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;

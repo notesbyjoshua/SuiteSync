@@ -494,6 +494,8 @@
 .create-suite-form { align-items: end; display: grid; gap: 1rem; grid-template-columns: 1.2fr 1.2fr 0.6fr auto; }
 .create-suite-form .field { margin: 0; }
 .create-suite-form .button { margin: 0; white-space: nowrap; }
+.create-account-form { grid-template-columns: 1fr 1fr auto; }
+.admin-helper { color: var(--sl-color-gray-3); font-size: 0.75rem; margin: 1rem 0 0; }
 .suite-grid { display: grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); margin-top: 1.5rem; }
 .suite-grid article { border: 1px solid var(--sl-color-gray-5); border-radius: 0.8rem; padding: 1rem; }
 .suite-grid article > span { color: var(--sl-color-gray-3); font-size: 0.68rem; text-transform: uppercase; }

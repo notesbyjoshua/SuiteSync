@@ -16,11 +16,11 @@ Then open `http://localhost:4321`.
 1. Create a Supabase project.
 2. Open the Supabase SQL Editor and run `supabase/migrations/20260711000000_create_survey_responses.sql`.
 3. Copy `.env.example` to `.env` and add the project URL and publishable/anon key from **Project Settings → API**.
-4. Under **Authentication → Providers → Email**, keep the Email provider enabled and turn off **Confirm email**. This allows password registration without sending confirmation links.
+4. Authentication configuration is managed in `supabase/config.toml`: public signup and email confirmation are disabled. Accounts are created by administrators only.
 5. Passwords must contain at least eight characters.
 6. Restart `npm run dev`.
 
-Applicants create an email-and-password Supabase account or sign in to an existing account. The browser role can only insert a survey response when its email and user ID match the signed-in account. Row-level security prevents public clients from reading, changing, or deleting responses. Use a server-side service-role client for the future matching algorithm—never expose the service-role key in a `PUBLIC_` variable.
+Applicants sign in to an account created by a SuiteSync administrator. Public registration is disabled. The browser role can only insert a survey response when its email and user ID match the signed-in account. Row-level security prevents public clients from reading, changing, or deleting responses. Use a server-side service-role client for the future matching algorithm—never expose the service-role key in a `PUBLIC_` variable.
 
 ## Supabase CLI
 
