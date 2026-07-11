@@ -1,0 +1,156 @@
+---
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+---
+
+<main class="admin-shell" data-admin-root data-supabase-url={supabaseUrl} data-supabase-key={supabaseKey}>
+  <header class="admin-header">
+    <div><span class="survey-kicker">SUITESYNC OPERATIONS</span><h1>Matching overview</h1><p>Supervise survey responses and build balanced suites.</p></div>
+    <a href={import.meta.env.BASE_URL}>← Back to site</a>
+  </header>
+
+  <section class="auth-card" data-admin-auth>
+    <div class="auth-icon">✦</div><span class="step-label">ADMIN ACCESS</span><h2>Sign in to continue.</h2>
+    <p>Use an email associated with an approved SuiteSync administrator.</p>
+    <form data-admin-auth-form>
+      <label class="field"><span>Admin email</span><input name="email" type="email" required autocomplete="email" placeholder="admin@example.com" /></label>
+      <button class="button primary auth-button" type="submit">Send secure sign-in link <span>→</span></button>
+    </form>
+    <div class="auth-message" data-admin-message role="status" hidden></div>
+  </section>
+
+  <section data-admin-denied hidden class="access-denied">
+    <strong>Admin access required</strong><p>You are signed in, but this account is not on the SuiteSync administrator list.</p><button class="button secondary" data-admin-signout>Sign out</button>
+  </section>
+
+  <div data-admin-dashboard hidden>
+    <div class="admin-toolbar"><span>Signed in as <strong data-admin-email></strong></span><button data-admin-signout>Sign out</button></div>
+    <section class="stat-grid">
+      <article><span>Total responses</span><strong data-stat="total">—</strong></article>
+      <article><span>Awaiting match</span><strong data-stat="pending">—</strong></article>
+      <article><span>Matched</span><strong data-stat="matched">—</strong></article>
+      <article><span>Draft suites</span><strong data-stat="suites">—</strong></article>
+    </section>
+
+    <section class="admin-panel">
+      <div class="panel-heading"><div><span class="step-label">SUITES</span><h2>Create and monitor suites</h2></div></div>
+      <form class="create-suite-form" data-create-suite>
+        <label class="field"><span>Suite name</span><input name="name" required maxlength="80" placeholder="e.g. Davenport 201" /></label>
+        <label class="field"><span>Session <small>(optional)</small></span><input name="session" maxlength="100" placeholder="e.g. IST" /></label>
+        <label class="field"><span>Capacity</span><select name="capacity"><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option></select></label>
+        <button class="button primary" type="submit">Create suite</button>
+      </form>
+      <div class="suite-grid" data-suite-grid></div>
+    </section>
+
+    <section class="admin-panel">
+      <div class="panel-heading"><div><span class="step-label">APPLICANTS</span><h2>Survey responses</h2></div><label>Show <select data-response-filter><option value="all">All responses</option><option value="pending">Awaiting match</option><option value="matched">Matched</option></select></label></div>
+      <div class="admin-message" data-dashboard-message hidden></div>
+      <div class="response-table-wrap"><table class="response-table"><thead><tr><th>Applicant</th><th>Session</th><th>Preferences</th><th>Status</th><th>Suite assignment</th></tr></thead><tbody data-response-list></tbody></table></div>
+    </section>
+  </div>
+</main>
+
+<script>
+  import { createClient, type User } from '@supabase/supabase-js';
+  type Suite = { id: string; name: string; session: string | null; capacity: number; status: string; suite_members: { count: number }[] };
+  type Response = { id: string; preferred_name: string; email: string; session: string; sleep_schedule: string; tidiness: number; recharge_style: string; suite_priorities: string[]; matching_status: string; suite_id: string | null };
+
+  const root = document.querySelector('[data-admin-root]');
+  if (root instanceof HTMLElement) {
+    const url = root.dataset.supabaseUrl;
+    const key = root.dataset.supabaseKey;
+    const client = url && key ? createClient(url, key) : null;
+    let suites: Suite[] = [];
+    let responses: Response[] = [];
+
+    const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>'"]/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[character] ?? character);
+
+    const message = (copy: string, kind = 'error') => {
+      const el = root.querySelector('[data-dashboard-message]');
+      if (el instanceof HTMLElement) { el.textContent = copy; el.dataset.kind = kind; el.hidden = !copy; }
+    };
+
+    const setScreen = (screen: 'auth' | 'denied' | 'dashboard') => {
+      const mapping = { auth: '[data-admin-auth]', denied: '[data-admin-denied]', dashboard: '[data-admin-dashboard]' };
+      Object.entries(mapping).forEach(([name, selector]) => { const el = root.querySelector(selector); if (el instanceof HTMLElement) el.hidden = name !== screen; });
+    };
+
+    const render = () => {
+      const stats = { total: responses.length, pending: responses.filter(r => r.matching_status === 'pending').length, matched: responses.filter(r => r.matching_status === 'matched').length, suites: suites.length };
+      Object.entries(stats).forEach(([name, value]) => { const el = root.querySelector(`[data-stat="${name}"]`); if (el) el.textContent = String(value); });
+      const suiteGrid = root.querySelector('[data-suite-grid]');
+      if (suiteGrid) suiteGrid.innerHTML = suites.length ? suites.map(s => `<article><span>${escapeHtml(s.session || 'All sessions')}</span><h3>${escapeHtml(s.name)}</h3><strong>${s.suite_members?.[0]?.count ?? 0} / ${s.capacity} members</strong><div><i style="width:${((s.suite_members?.[0]?.count ?? 0) / s.capacity) * 100}%"></i></div></article>`).join('') : '<p class="empty-state">No suites created yet.</p>';
+      renderResponses();
+    };
+
+    const renderResponses = () => {
+      const filter = root.querySelector('[data-response-filter]');
+      const value = filter instanceof HTMLSelectElement ? filter.value : 'all';
+      const shown = value === 'all' ? responses : responses.filter(r => r.matching_status === value);
+      const list = root.querySelector('[data-response-list]');
+      if (!list) return;
+      list.innerHTML = shown.length ? shown.map(r => `<tr><td><strong>${escapeHtml(r.preferred_name)}</strong><small>${escapeHtml(r.email)}</small></td><td>${escapeHtml(r.session)}</td><td><small>${escapeHtml(r.sleep_schedule)} · tidy ${r.tidiness}/5 · ${escapeHtml(r.recharge_style)}</small><span>${escapeHtml(r.suite_priorities.join(', '))}</span></td><td><span class="status-badge ${escapeHtml(r.matching_status)}">${escapeHtml(r.matching_status)}</span></td><td><div class="assignment-control"><select data-assign="${r.id}"><option value="">Unassigned</option>${suites.map(s => `<option value="${s.id}" ${r.suite_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select><button data-save-assignment="${r.id}">Save</button></div></td></tr>`).join('') : '<tr><td colspan="5" class="empty-state">No responses match this view.</td></tr>';
+    };
+
+    const loadDashboard = async (user: User) => {
+      if (!client) return;
+      const { data: allowed } = await client.rpc('is_admin');
+      if (!allowed) { setScreen('denied'); return; }
+      setScreen('dashboard');
+      root.querySelectorAll('[data-admin-email]').forEach(el => { el.textContent = user.email ?? ''; });
+      const [suiteResult, responseResult] = await Promise.all([
+        client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'),
+        client.from('survey_responses').select('id,preferred_name,email,session,sleep_schedule,tidiness,recharge_style,suite_priorities,matching_status,suite_id').order('preferred_name')
+      ]);
+      if (suiteResult.error || responseResult.error) { message('Could not load matching data. Check the admin database policies.'); return; }
+      suites = (suiteResult.data ?? []) as Suite[];
+      responses = (responseResult.data ?? []) as Response[];
+      render();
+    };
+
+    if (!client) {
+      setScreen('auth');
+      const el = root.querySelector('[data-admin-message]');
+      if (el instanceof HTMLElement) { el.textContent = 'Supabase is not configured.'; el.dataset.kind = 'error'; el.hidden = false; }
+    } else {
+      const { data: { session } } = await client.auth.getSession();
+      if (session?.user) await loadDashboard(session.user); else setScreen('auth');
+      client.auth.onAuthStateChange((_event, nextSession) => { if (nextSession?.user) void loadDashboard(nextSession.user); else setScreen('auth'); });
+    }
+
+    root.querySelector('[data-admin-auth-form]')?.addEventListener('submit', async (event) => {
+      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
+      const data = new FormData(event.currentTarget); const email = String(data.get('email') ?? '').trim().toLowerCase();
+      const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}admin/` } });
+      const el = root.querySelector('[data-admin-message]');
+      if (el instanceof HTMLElement) { el.textContent = error ? 'Could not send the sign-in link.' : 'Check your inbox for the secure admin sign-in link.'; el.dataset.kind = error ? 'error' : 'success'; el.hidden = false; }
+    });
+
+    root.querySelectorAll('[data-admin-signout]').forEach(button => button.addEventListener('click', () => client?.auth.signOut()));
+    root.querySelector('[data-response-filter]')?.addEventListener('change', renderResponses);
+
+    root.querySelector('[data-create-suite]')?.addEventListener('submit', async (event) => {
+      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
+      const form = event.currentTarget; const data = new FormData(form);
+      const { error } = await client.rpc('admin_create_suite', { suite_name: String(data.get('name')), suite_capacity: Number(data.get('capacity')), suite_session: String(data.get('session') ?? '') });
+      if (error) { message(error.message); return; }
+      form.reset(); message('Suite created.', 'success');
+      const { data: refreshed } = await client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'); suites = (refreshed ?? []) as Suite[]; render();
+    });
+
+    root.querySelector('[data-response-list]')?.addEventListener('click', async (event) => {
+      const target = event.target; if (!client || !(target instanceof HTMLButtonElement) || !target.dataset.saveAssignment) return;
+      const responseId = target.dataset.saveAssignment; const select = root.querySelector(`[data-assign="${responseId}"]`);
+      if (!(select instanceof HTMLSelectElement)) return;
+      target.disabled = true;
+      const result = select.value ? await client.rpc('admin_assign_response', { target_response_id: responseId, target_suite_id: select.value }) : await client.rpc('admin_unassign_response', { target_response_id: responseId });
+      target.disabled = false;
+      if (result.error) { message(result.error.message); return; }
+      const response = responses.find(r => r.id === responseId); if (response) { response.suite_id = select.value || null; response.matching_status = select.value ? 'matched' : 'pending'; }
+      const { data: refreshed } = await client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'); suites = (refreshed ?? []) as Suite[]; message('Assignment saved.', 'success'); render();
+    });
+  }
+</script>
