@@ -8,7 +8,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'SuiteSync',
-      description: 'A thoughtful foundation for your next idea.',
+      description: 'Thoughtful suite matching for the YYGS residential experience.',
       favicon: '/SuiteSync/favicon.svg',
       logo: {
         src: './src/assets/logo.svg',

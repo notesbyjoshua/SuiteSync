@@ -1,0 +1,280 @@
+---
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+---
+
+<div class="survey-shell" data-survey-root data-supabase-url={supabaseUrl} data-supabase-key={supabaseKey}>
+  <header class="survey-intro">
+    <a class="back-link" href={import.meta.env.BASE_URL}>← SuiteSync home</a>
+    <span class="survey-kicker">YYGS RESIDENTIAL LIFE</span>
+    <h1>Let’s find your suite.</h1>
+    <p>Your honest preferences help us build a comfortable, welcoming group. There are no right answers, and your responses do not affect admission.</p>
+  </header>
+
+  <div class="survey-layout">
+    <aside class="survey-progress" aria-label="Survey progress">
+      <div class="progress-heading">
+        <span>YOUR PROGRESS</span>
+        <strong data-progress-label>1 of 5</strong>
+      </div>
+      <div class="progress-track" aria-hidden="true"><span data-progress-bar></span></div>
+      <ol>
+        <li class="is-active" data-progress-step="0"><span>1</span>Welcome</li>
+        <li data-progress-step="1"><span>2</span>About you</li>
+        <li data-progress-step="2"><span>3</span>Daily rhythms</li>
+        <li data-progress-step="3"><span>4</span>Suite community</li>
+        <li data-progress-step="4"><span>5</span>Review</li>
+      </ol>
+      <p>Your responses are private and are used only for suite matching and residential planning.</p>
+    </aside>
+
+    <form class="survey-card" data-survey-form novalidate>
+      <section class="survey-section is-active" data-section="0">
+        <span class="step-label">STEP 1 OF 5</span>
+        <h2>Welcome to residential life</h2>
+        <p>Living at YYGS means sharing space with students whose routines, cultures, and personalities may be different from yours. SuiteSync aims to make those differences easier to navigate—not remove them.</p>
+        <div class="info-panel">
+          <strong>Before you begin</strong>
+          <ul>
+            <li>Answer for how you actually live, not how you think you should live.</li>
+            <li>Matching considers the whole group; no single answer determines your suite.</li>
+            <li>Accessibility and accommodation requests should still go through official YYGS channels.</li>
+          </ul>
+        </div>
+        <label class="check-field">
+          <input type="checkbox" name="intro_acknowledged" required />
+          <span>I understand how my responses will be used.</span>
+        </label>
+      </section>
+
+      <section class="survey-section" data-section="1" hidden>
+        <span class="step-label">STEP 2 OF 5</span>
+        <h2>First, tell us who you are.</h2>
+        <p class="section-copy">We’ll use these details to connect this response to your YYGS application.</p>
+        <div class="field-grid">
+          <label class="field"><span>Preferred name</span><input name="preferred_name" autocomplete="given-name" required maxlength="80" placeholder="What should your suitemates call you?" /></label>
+          <label class="field"><span>Application email</span><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com" /></label>
+          <label class="field"><span>YYGS session</span><select name="session" required><option value="">Select a session</option><option>Innovations in Science & Technology</option><option>Literature, Philosophy & Culture</option><option>Politics, Law & Economics</option><option>Solving Global Challenges</option></select></label>
+          <label class="field"><span>Age when the session begins</span><input name="age" type="number" min="15" max="18" required placeholder="16" /></label>
+        </div>
+        <label class="field"><span>Pronouns <small>(optional)</small></span><input name="pronouns" maxlength="60" placeholder="e.g. she/her, he/him, they/them" /></label>
+      </section>
+
+      <section class="survey-section" data-section="2" hidden>
+        <span class="step-label">STEP 3 OF 5</span>
+        <h2>What are your daily rhythms?</h2>
+        <p class="section-copy">These placeholder questions help us understand shared-space compatibility.</p>
+        <fieldset class="question-block" data-required-group="sleep_schedule">
+          <legend>On most days, which sounds most like you?</legend>
+          <label class="option-card"><input type="radio" name="sleep_schedule" value="early" required /><span><strong>Early bird</strong><small>I wind down early and like quieter nights.</small></span></label>
+          <label class="option-card"><input type="radio" name="sleep_schedule" value="flexible" /><span><strong>Flexible</strong><small>I can adapt to the people and plans around me.</small></span></label>
+          <label class="option-card"><input type="radio" name="sleep_schedule" value="late" /><span><strong>Night owl</strong><small>I often stay up later talking, reading, or working.</small></span></label>
+        </fieldset>
+        <label class="range-field"><span><strong>How tidy do you prefer shared spaces?</strong><output data-range-output="tidiness">3 — somewhere in between</output></span><input type="range" name="tidiness" min="1" max="5" value="3" /></label>
+        <fieldset class="question-block">
+          <legend>How do you usually recharge?</legend>
+          <select name="recharge_style" required><option value="">Choose one</option><option value="alone">Mostly with quiet time alone</option><option value="mix">A mix of alone time and company</option><option value="social">Mostly by being around other people</option></select>
+        </fieldset>
+      </section>
+
+      <section class="survey-section" data-section="3" hidden>
+        <span class="step-label">STEP 4 OF 5</span>
+        <h2>What kind of suite community helps you thrive?</h2>
+        <p class="section-copy">Think about the group dynamic you hope to help create.</p>
+        <fieldset class="question-block">
+          <legend>What matters most to you in a suite? <small>Select up to 3</small></legend>
+          <div class="choice-grid" data-max-choices="3">
+            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="quiet" /><span>Quiet downtime</span></label>
+            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="conversation" /><span>Late-night conversations</span></label>
+            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="activities" /><span>Doing activities together</span></label>
+            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="cultures" /><span>Sharing cultures</span></label>
+            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="independence" /><span>Plenty of independence</span></label>
+            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="support" /><span>Mutual support</span></label>
+          </div>
+        </fieldset>
+        <label class="field"><span>When a small conflict comes up, what helps you handle it?</span><textarea name="conflict_style" required maxlength="600" rows="4" placeholder="A few honest sentences are plenty."></textarea><small><span data-char-count="conflict_style">0</span>/600</small></label>
+        <label class="field"><span>Anything else you’d like us to consider? <small>(optional)</small></span><textarea name="additional_notes" maxlength="1000" rows="4" placeholder="Share a preference or context that the questions missed."></textarea><small><span data-char-count="additional_notes">0</span>/1000</small></label>
+      </section>
+
+      <section class="survey-section" data-section="4" hidden>
+        <span class="step-label">STEP 5 OF 5</span>
+        <h2>Review and submit</h2>
+        <p class="section-copy">Check your answers before sending them to SuiteSync.</p>
+        <div class="review-list" data-review-list></div>
+        <label class="check-field consent-field"><input type="checkbox" name="consent" required /><span>I consent to SuiteSync storing these responses and using them for suite matching and residential planning.</span></label>
+        <div class="backend-notice" data-backend-notice hidden><strong>Supabase setup needed</strong><span>Add the public Supabase environment variables to submit this form. Your answers have not been sent.</span></div>
+      </section>
+
+      <div class="form-error" data-form-error role="alert" hidden></div>
+      <div class="survey-actions">
+        <button class="button secondary" type="button" data-back hidden>Back</button>
+        <button class="button primary" type="button" data-next>Continue <span>→</span></button>
+        <button class="button primary" type="submit" data-submit hidden>Submit survey <span>→</span></button>
+      </div>
+    </form>
+
+    <section class="success-card" data-success hidden>
+      <div class="success-icon">✓</div>
+      <span class="step-label">RESPONSE RECEIVED</span>
+      <h2>You’re one step closer to meeting your suite.</h2>
+      <p>Thanks for sharing what helps you feel at home. You’ll hear from YYGS when suite matching is complete.</p>
+      <a class="button primary" href={import.meta.env.BASE_URL}>Return home</a>
+    </section>
+  </div>
+</div>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const root = document.querySelector('[data-survey-root]');
+  if (root instanceof HTMLElement) {
+    const form = root.querySelector('[data-survey-form]');
+    const sections = [...root.querySelectorAll('[data-section]')];
+    const progressSteps = [...root.querySelectorAll('[data-progress-step]')];
+    const next = root.querySelector('[data-next]');
+    const back = root.querySelector('[data-back]');
+    const submit = root.querySelector('[data-submit]');
+    const errorBox = root.querySelector('[data-form-error]');
+    let current = 0;
+
+    const showError = (message = '') => {
+      if (!(errorBox instanceof HTMLElement)) return;
+      errorBox.textContent = message;
+      errorBox.hidden = !message;
+    };
+
+    const validateSection = () => {
+      const section = sections[current];
+      if (!(section instanceof HTMLElement)) return false;
+      const fields = [...section.querySelectorAll('input, select, textarea')];
+      for (const field of fields) {
+        if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+          if (!field.checkValidity()) {
+            field.reportValidity();
+            return false;
+          }
+        }
+      }
+      if (current === 3 && section.querySelectorAll('input[name="suite_priorities"]:checked').length === 0) {
+        showError('Choose at least one thing that matters to you in a suite.');
+        return false;
+      }
+      showError();
+      return true;
+    };
+
+    const updateReview = () => {
+      if (!(form instanceof HTMLFormElement)) return;
+      const data = new FormData(form);
+      const labels = {
+        preferred_name: 'Preferred name', email: 'Application email', session: 'YYGS session', age: 'Age', pronouns: 'Pronouns',
+        sleep_schedule: 'Daily rhythm', tidiness: 'Shared-space tidiness', recharge_style: 'Recharge style',
+        suite_priorities: 'Suite priorities', conflict_style: 'Handling conflict', additional_notes: 'Additional notes'
+      };
+      const review = root.querySelector('[data-review-list]');
+      if (!(review instanceof HTMLElement)) return;
+      review.innerHTML = Object.entries(labels).map(([key, label]) => {
+        const values = data.getAll(key).filter(Boolean).map(String);
+        return `<div><span>${label}</span><strong>${values.length ? values.join(', ') : 'Not provided'}</strong></div>`;
+      }).join('');
+    };
+
+    const renderStep = () => {
+      sections.forEach((section, index) => {
+        if (section instanceof HTMLElement) {
+          section.hidden = index !== current;
+          section.classList.toggle('is-active', index === current);
+        }
+      });
+      progressSteps.forEach((step, index) => {
+        step.classList.toggle('is-active', index === current);
+        step.classList.toggle('is-complete', index < current);
+      });
+      const label = root.querySelector('[data-progress-label]');
+      const bar = root.querySelector('[data-progress-bar]');
+      if (label) label.textContent = `${current + 1} of ${sections.length}`;
+      if (bar instanceof HTMLElement) bar.style.width = `${((current + 1) / sections.length) * 100}%`;
+      if (back instanceof HTMLElement) back.hidden = current === 0;
+      if (next instanceof HTMLElement) next.hidden = current === sections.length - 1;
+      if (submit instanceof HTMLElement) submit.hidden = current !== sections.length - 1;
+      if (current === sections.length - 1) updateReview();
+      showError();
+      root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    next?.addEventListener('click', () => { if (validateSection()) { current += 1; renderStep(); } });
+    back?.addEventListener('click', () => { current -= 1; renderStep(); });
+
+    root.querySelectorAll('[data-max-choices]').forEach((group) => {
+      group.addEventListener('change', () => {
+        const limit = Number(group.getAttribute('data-max-choices'));
+        const checked = group.querySelectorAll('input:checked');
+        if (checked.length > limit) {
+          const last = checked[checked.length - 1];
+          if (last instanceof HTMLInputElement) last.checked = false;
+          showError(`Choose up to ${limit} options.`);
+        } else showError();
+      });
+    });
+
+    root.querySelectorAll('textarea[maxlength]').forEach((field) => {
+      field.addEventListener('input', () => {
+        if (!(field instanceof HTMLTextAreaElement)) return;
+        const counter = root.querySelector(`[data-char-count="${field.name}"]`);
+        if (counter) counter.textContent = String(field.value.length);
+      });
+    });
+
+    const range = root.querySelector('input[name="tidiness"]');
+    range?.addEventListener('input', () => {
+      if (!(range instanceof HTMLInputElement)) return;
+      const descriptions = ['very relaxed', 'mostly relaxed', 'somewhere in between', 'usually tidy', 'very tidy'];
+      const output = root.querySelector('[data-range-output="tidiness"]');
+      if (output) output.textContent = `${range.value} — ${descriptions[Number(range.value) - 1]}`;
+    });
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!validateSection() || !(form instanceof HTMLFormElement) || !(submit instanceof HTMLButtonElement)) return;
+      const url = root.dataset.supabaseUrl;
+      const key = root.dataset.supabaseKey;
+      if (!url || !key) {
+        const notice = root.querySelector('[data-backend-notice]');
+        if (notice instanceof HTMLElement) notice.hidden = false;
+        return;
+      }
+      submit.disabled = true;
+      submit.textContent = 'Submitting…';
+      const data = new FormData(form);
+      const response = {
+        preferred_name: String(data.get('preferred_name') ?? '').trim(),
+        email: String(data.get('email') ?? '').trim().toLowerCase(),
+        session: String(data.get('session') ?? ''),
+        age: Number(data.get('age')),
+        pronouns: String(data.get('pronouns') ?? '').trim() || null,
+        sleep_schedule: String(data.get('sleep_schedule') ?? ''),
+        tidiness: Number(data.get('tidiness')),
+        recharge_style: String(data.get('recharge_style') ?? ''),
+        suite_priorities: data.getAll('suite_priorities').map(String),
+        conflict_style: String(data.get('conflict_style') ?? '').trim(),
+        additional_notes: String(data.get('additional_notes') ?? '').trim() || null,
+        consented_at: new Date().toISOString(),
+        survey_version: 1
+      };
+      const { error } = await createClient(url, key).from('survey_responses').insert(response);
+      if (error) {
+        showError(error.code === '23505' ? 'A survey has already been submitted for this email.' : 'We couldn’t submit your survey. Please try again in a moment.');
+        submit.disabled = false;
+        submit.innerHTML = 'Submit survey <span>→</span>';
+        return;
+      }
+      const layout = root.querySelector('.survey-layout');
+      const success = root.querySelector('[data-success]');
+      if (layout instanceof HTMLElement) layout.querySelectorAll(':scope > :not([data-success])').forEach((el) => { if (el instanceof HTMLElement) el.hidden = true; });
+      if (success instanceof HTMLElement) success.hidden = false;
+      root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    renderStep();
+  }
+</script>

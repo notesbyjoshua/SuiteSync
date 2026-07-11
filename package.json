@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "~0.39.1",
+    "@supabase/supabase-js": "^2.57.4",
     "astro": "~6.4.8",
     "starlight-ion-theme": "^2.4.0"
   },
