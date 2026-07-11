@@ -330,6 +330,10 @@
   max-width: 43rem;
 }
 
+.welcome-copy { color: var(--sl-color-gray-2); line-height: 1.75; }
+.welcome-copy p { margin: 0.9rem 0; }
+.welcome-copy h3 { color: var(--sl-color-white); font-size: 1rem; letter-spacing: -0.01em; margin: 1.8rem 0 0.4rem; }
+
 .info-panel {
   background: color-mix(in srgb, var(--sl-color-accent) 9%, var(--sl-color-gray-6));
   border: 1px solid color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
