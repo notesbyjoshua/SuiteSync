@@ -20,7 +20,7 @@ Then open `http://localhost:4321`.
 5. Passwords must contain at least eight characters.
 6. Restart `npm run dev`.
 
-Applicants sign in to an account created by a SuiteSync administrator. Public registration is disabled. The browser role can only insert a survey response when its email and user ID match the signed-in account. Row-level security prevents public clients from reading, changing, or deleting responses. Use a server-side service-role client for the future matching algorithm—never expose the service-role key in a `PUBLIC_` variable.
+The applicant survey is currently in temporary testing mode: no sign-in is required and anonymous visitors can submit test responses. Row-level security still prevents public clients from reading, changing, or deleting responses. Restore authenticated-only inserts before collecting real applicant information. Use a server-side service-role client for the future matching algorithm—never expose the service-role key in a `PUBLIC_` variable.
 
 ## Supabase CLI
 

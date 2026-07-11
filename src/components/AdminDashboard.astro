@@ -16,20 +16,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       <label class="field"><span>Admin email</span><input name="email" type="email" required autocomplete="email" placeholder="admin@example.com" /></label>
       <label class="field"><span>Password</span><input name="password" type="password" required minlength="8" maxlength="72" autocomplete="current-password" placeholder="Your SuiteSync password" /></label>
       <button class="button primary auth-button" type="submit">Sign in <span>→</span></button>
-      <button class="text-button" type="button" data-forgot-password>Forgot or never set a password?</button>
     </form>
     <div class="auth-message" data-admin-message role="status" hidden></div>
-  </section>
-
-  <section class="auth-card" data-password-reset hidden>
-    <div class="auth-icon">✦</div><span class="step-label">SET A NEW PASSWORD</span><h2>Choose your SuiteSync password.</h2>
-    <p>Use at least eight characters, including uppercase and lowercase letters, a number, and a symbol.</p>
-    <form data-password-reset-form>
-      <label class="field"><span>New password</span><input name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" /></label>
-      <label class="field"><span>Confirm new password</span><input name="confirmation" type="password" required minlength="8" maxlength="72" autocomplete="new-password" /></label>
-      <button class="button primary auth-button" type="submit">Save new password <span>→</span></button>
-    </form>
-    <div class="auth-message" data-reset-message role="status" hidden></div>
   </section>
 
   <section data-admin-denied hidden class="access-denied">
@@ -96,8 +84,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       if (el instanceof HTMLElement) { el.textContent = copy; el.dataset.kind = kind; el.hidden = !copy; }
     };
 
-    const setScreen = (screen: 'auth' | 'reset' | 'denied' | 'dashboard') => {
-      const mapping = { auth: '[data-admin-auth]', reset: '[data-password-reset]', denied: '[data-admin-denied]', dashboard: '[data-admin-dashboard]' };
+    const setScreen = (screen: 'auth' | 'denied' | 'dashboard') => {
+      const mapping = { auth: '[data-admin-auth]', denied: '[data-admin-denied]', dashboard: '[data-admin-dashboard]' };
       Object.entries(mapping).forEach(([name, selector]) => { const el = root.querySelector(selector); if (el instanceof HTMLElement) el.hidden = name !== screen; });
     };
 
@@ -139,14 +127,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const el = root.querySelector('[data-admin-message]');
       if (el instanceof HTMLElement) { el.textContent = 'Supabase is not configured.'; el.dataset.kind = 'error'; el.hidden = false; }
     } else {
-      client.auth.onAuthStateChange((event, nextSession) => {
-        if (event === 'PASSWORD_RECOVERY') setScreen('reset');
-        else if (nextSession?.user) void loadDashboard(nextSession.user);
-        else setScreen('auth');
-      });
+      client.auth.onAuthStateChange((_event, nextSession) => { if (nextSession?.user) void loadDashboard(nextSession.user); else setScreen('auth'); });
       const { data: { session } } = await client.auth.getSession();
-      const isRecovery = window.location.hash.includes('type=recovery') || new URLSearchParams(window.location.search).get('type') === 'recovery';
-      if (isRecovery) setScreen('reset'); else if (session?.user) await loadDashboard(session.user); else setScreen('auth');
+      if (session?.user) await loadDashboard(session.user); else setScreen('auth');
     }
 
     root.querySelector('[data-admin-auth-form]')?.addEventListener('submit', async (event) => {
@@ -158,25 +141,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     });
 
     root.querySelectorAll('[data-admin-signout]').forEach(button => button.addEventListener('click', () => client?.auth.signOut()));
-    root.querySelector('[data-forgot-password]')?.addEventListener('click', async () => {
-      if (!client) return;
-      const form = root.querySelector('[data-admin-auth-form]');
-      const emailInput = form instanceof HTMLFormElement ? form.elements.namedItem('email') : null;
-      const notice = root.querySelector('[data-admin-message]');
-      if (!(emailInput instanceof HTMLInputElement) || !emailInput.reportValidity()) return;
-      const { error } = await client.auth.resetPasswordForEmail(emailInput.value.trim().toLowerCase(), { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}admin/` });
-      if (notice instanceof HTMLElement) { notice.textContent = error ? 'Could not send the password reset email.' : 'Check your inbox for a password reset link.'; notice.dataset.kind = error ? 'error' : 'success'; notice.hidden = false; }
-    });
-
-    root.querySelector('[data-password-reset-form]')?.addEventListener('submit', async (event) => {
-      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
-      const data = new FormData(event.currentTarget); const password = String(data.get('password') ?? ''); const confirmation = String(data.get('confirmation') ?? '');
-      const notice = root.querySelector('[data-reset-message]');
-      if (password !== confirmation) { if (notice instanceof HTMLElement) { notice.textContent = 'The passwords do not match.'; notice.dataset.kind = 'error'; notice.hidden = false; } return; }
-      const { data: updated, error } = await client.auth.updateUser({ password });
-      if (notice instanceof HTMLElement) { notice.textContent = error ? error.message : 'Password saved. Opening the admin dashboard…'; notice.dataset.kind = error ? 'error' : 'success'; notice.hidden = false; }
-      if (!error && updated.user) { history.replaceState(null, '', `${import.meta.env.BASE_URL}admin/`); await loadDashboard(updated.user); }
-    });
     root.querySelector('[data-response-filter]')?.addEventListener('change', renderResponses);
 
     root.querySelector('[data-create-account]')?.addEventListener('submit', async (event) => {

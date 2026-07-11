@@ -11,27 +11,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     <p>Your honest preferences help us build a comfortable, welcoming group. There are no right answers, and your responses do not affect admission.</p>
   </header>
 
-  <section class="auth-card" data-auth-gate>
-    <div class="auth-icon">✦</div>
-    <span class="step-label">VERIFY YOUR IDENTITY</span>
-    <h2>Sign in with your application email.</h2>
-    <p>Use the same email address associated with your YYGS application and your SuiteSync password.</p>
-    <form data-auth-form>
-      <label class="field">
-        <span>Application email</span>
-        <input type="email" name="auth_email" autocomplete="email" required maxlength="254" placeholder="you@example.com" />
-      </label>
-      <label class="field">
-        <span>Password</span>
-        <input type="password" name="auth_password" autocomplete="current-password" required minlength="8" maxlength="72" placeholder="At least 8 characters" />
-      </label>
-      <div class="auth-actions"><button class="button primary auth-button" type="submit" data-auth-submit>Sign in <span>→</span></button></div>
-    </form>
-    <div class="auth-message" data-auth-message role="status" hidden></div>
-    <p class="privacy-note">Your password is handled securely by Supabase and is never stored by SuiteSync.</p>
-  </section>
+  <div class="testing-banner"><strong>Testing mode</strong><span>Sign-in is temporarily disabled. Please use test information only.</span></div>
 
-  <div class="survey-layout" data-survey-layout hidden>
+  <div class="survey-layout" data-survey-layout>
     <aside class="survey-progress" aria-label="Survey progress">
       <div class="progress-heading">
         <span>YOUR PROGRESS</span>
@@ -49,10 +31,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     </aside>
 
     <form class="survey-card" data-survey-form novalidate>
-      <div class="signed-in-banner">
-        <span>Signed in as <strong data-signed-in-email></strong></span>
-        <button type="button" data-sign-out>Sign out</button>
-      </div>
       <section class="survey-section is-active" data-section="0">
         <span class="step-label">STEP 1 OF 5</span>
         <h2>Welcome to residential life</h2>
@@ -77,7 +55,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         <p class="section-copy">We’ll use these details to connect this response to your YYGS application.</p>
         <div class="field-grid">
           <label class="field"><span>Preferred name</span><input name="preferred_name" autocomplete="given-name" required maxlength="80" placeholder="What should your suitemates call you?" /></label>
-          <label class="field"><span>Verified application email</span><input name="email" type="email" autocomplete="email" required readonly data-auth-email /></label>
+          <label class="field"><span>Application email</span><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com" /></label>
           <label class="field"><span>YYGS session</span><select name="session" required><option value="">Select a session</option><option>Innovations in Science & Technology</option><option>Literature, Philosophy & Culture</option><option>Politics, Law & Economics</option><option>Solving Global Challenges</option></select></label>
           <label class="field"><span>How old are you?</span><input name="age" type="number" min="15" max="18" required placeholder="16" /><small>You will be given a roommate within two years of your age unless specified otherwise.</small></label>
         </div>
@@ -187,7 +165,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 </div>
 
 <script>
-  import { createClient, type User } from '@supabase/supabase-js';
+  import { createClient } from '@supabase/supabase-js';
 
   const root = document.querySelector('[data-survey-root]');
   if (root instanceof HTMLElement) {
@@ -198,75 +176,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     const back = root.querySelector('[data-back]');
     const submit = root.querySelector('[data-submit]');
     const errorBox = root.querySelector('[data-form-error]');
-    const authGate = root.querySelector('[data-auth-gate]');
-    const surveyLayout = root.querySelector('[data-survey-layout]');
-    const authForm = root.querySelector('[data-auth-form]');
-    const authMessage = root.querySelector('[data-auth-message]');
-    const authButtons = [...root.querySelectorAll('[data-auth-submit]')];
     const url = root.dataset.supabaseUrl;
     const key = root.dataset.supabaseKey;
     const supabase = url && key ? createClient(url, key) : null;
-    let authenticatedUser: User | null = null;
     let current = 0;
-
-    const setAuthMessage = (message = '', kind = 'info') => {
-      if (!(authMessage instanceof HTMLElement)) return;
-      authMessage.textContent = message;
-      authMessage.dataset.kind = kind;
-      authMessage.hidden = !message;
-    };
-
-    const showAuthenticatedSurvey = (user: User) => {
-      authenticatedUser = user;
-      const email = user?.email ?? '';
-      root.querySelectorAll('[data-signed-in-email]').forEach((el) => { el.textContent = email; });
-      root.querySelectorAll('[data-auth-email]').forEach((el) => { if (el instanceof HTMLInputElement) el.value = email; });
-      if (authGate instanceof HTMLElement) authGate.hidden = true;
-      if (surveyLayout instanceof HTMLElement) surveyLayout.hidden = false;
-    };
-
-    const showAuthGate = () => {
-      authenticatedUser = null;
-      if (authGate instanceof HTMLElement) authGate.hidden = false;
-      if (surveyLayout instanceof HTMLElement) surveyLayout.hidden = true;
-    };
-
-    if (!supabase) {
-      setAuthMessage('Supabase is not configured yet. Add the public project URL and publishable key to enable sign-in.', 'error');
-      authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = true; });
-    } else {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) showAuthenticatedSurvey(session.user);
-      else showAuthGate();
-      supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) showAuthenticatedSurvey(session.user);
-        else showAuthGate();
-      });
-    }
-
-    authForm?.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      if (!supabase || !(authForm instanceof HTMLFormElement)) return;
-      const emailField = authForm.elements.namedItem('auth_email');
-      const passwordField = authForm.elements.namedItem('auth_password');
-      if (!(emailField instanceof HTMLInputElement) || !(passwordField instanceof HTMLInputElement) || !authForm.reportValidity()) return;
-      authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = true; });
-      setAuthMessage();
-      const credentials = { email: emailField.value.trim().toLowerCase(), password: passwordField.value };
-      const { error } = await supabase.auth.signInWithPassword(credentials);
-      if (error) {
-        setAuthMessage('The email or password is incorrect. Contact global.scholars@yale.edu if you need a SuiteSync account.', 'error');
-        authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = false; });
-        return;
-      }
-    });
-
-    root.querySelector('[data-sign-out]')?.addEventListener('click', async () => {
-      await supabase?.auth.signOut();
-      if (form instanceof HTMLFormElement) form.reset();
-      current = 0;
-      renderStep();
-    });
 
     const showError = (message = '') => {
       if (!(errorBox instanceof HTMLElement)) return;
@@ -367,12 +280,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!validateSection() || !(form instanceof HTMLFormElement) || !(submit instanceof HTMLButtonElement)) return;
-      if (!supabase || !authenticatedUser?.id || !authenticatedUser?.email) {
+      if (!supabase) {
         const notice = root.querySelector('[data-backend-notice]');
         if (notice instanceof HTMLElement) {
           notice.hidden = false;
-          const noticeCopy = notice.querySelector('span');
-          if (noticeCopy) noticeCopy.textContent = 'Your sign-in session expired. Sign in again before submitting.';
         }
         return;
       }
@@ -380,9 +291,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       submit.textContent = 'Submitting…';
       const data = new FormData(form);
       const response = {
-        user_id: authenticatedUser.id,
         preferred_name: String(data.get('preferred_name') ?? '').trim(),
-        email: authenticatedUser.email.toLowerCase(),
+        email: String(data.get('email') ?? '').trim().toLowerCase(),
         session: String(data.get('session') ?? ''),
         age: Number(data.get('age')),
         biological_sex: String(data.get('biological_sex') ?? ''),
