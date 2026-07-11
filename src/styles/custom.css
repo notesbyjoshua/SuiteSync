@@ -431,9 +431,10 @@
 .range-field output { color: var(--sl-color-gray-3); font-size: 0.78rem; font-weight: 400; }
 .range-field input { accent-color: var(--sl-color-accent); width: 100%; }
 
-.choice-grid { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+.choice-grid { display: grid; gap: 0.7rem; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); width: 100%; }
+.choice-chip { display: flex; min-width: 0; }
 .choice-chip input { height: 1px; opacity: 0; position: absolute; width: 1px; }
-.choice-chip span { border: 1px solid var(--sl-color-gray-4); border-radius: 10rem; cursor: pointer; display: block; font-size: 0.85rem; padding: 0.65rem 0.95rem; }
+.choice-chip span { align-items: center; border: 1px solid var(--sl-color-gray-4); border-radius: 10rem; cursor: pointer; display: flex; font-size: 0.85rem; justify-content: center; min-height: 2.75rem; padding: 0.65rem 0.95rem; text-align: center; width: 100%; }
 .choice-chip input:checked + span { background: var(--sl-color-accent); border-color: var(--sl-color-accent); color: white; }
 
 .review-list { border-block: 1px solid var(--sl-color-gray-5); margin-top: 2rem; }
@@ -550,8 +551,13 @@
   .back-link { margin-bottom: 2.5rem; }
   .review-list div { gap: 0.3rem; grid-template-columns: 1fr; }
   .range-field > span { align-items: start; flex-direction: column; gap: 0.3rem; }
+  .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-header { flex-direction: column-reverse; gap: 2rem; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .create-suite-form { grid-template-columns: 1fr; }
   .suite-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 28rem) {
+  .choice-grid { grid-template-columns: 1fr; }
 }
