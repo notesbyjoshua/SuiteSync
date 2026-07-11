@@ -16,16 +16,31 @@ concurrency:
 
 jobs:
   build:
+    environment: github-pages
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Verify Supabase configuration
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL || vars.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY || vars.PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$PUBLIC_SUPABASE_URL" ]; then
+            echo "::error::PUBLIC_SUPABASE_URL is missing. Add it as a repository or github-pages environment secret/variable."
+            exit 1
+          fi
+          if [ -z "$PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "::error::PUBLIC_SUPABASE_ANON_KEY is missing. Add it as a repository or github-pages environment secret/variable."
+            exit 1
+          fi
+
       - name: Build Astro site
         uses: withastro/action@v5
         env:
-          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
-          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL || vars.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY || vars.PUBLIC_SUPABASE_ANON_KEY }}
 
   deploy:
     environment:
