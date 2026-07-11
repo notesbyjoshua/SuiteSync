@@ -5,6 +5,7 @@ create table if not exists public.survey_responses (
   user_id uuid not null unique references auth.users(id) on delete cascade,
   preferred_name text not null check (char_length(preferred_name) between 1 and 80),
   email text not null unique check (email = lower(email) and char_length(email) <= 254),
+  track text not null,
   session text not null,
   age smallint not null check (age between 15 and 18),
   biological_sex text not null check (biological_sex in ('male', 'female', 'non_binary', 'other')),

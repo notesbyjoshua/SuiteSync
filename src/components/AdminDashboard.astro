@@ -65,7 +65,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 <script>
   import { createClient, type User } from '@supabase/supabase-js';
   type Suite = { id: string; name: string; session: string | null; capacity: number; status: string; suite_members: { count: number }[] };
-  type Response = { id: string; preferred_name: string; email: string; session: string; sleep_schedule: string; tidiness: number; recharge_style: string; suite_priorities: string[]; matching_status: string; suite_id: string | null };
+  type Response = { id: string; preferred_name: string; email: string; track: string | null; session: string; sleep_schedule: string; tidiness: number; recharge_style: string; suite_priorities: string[]; matching_status: string; suite_id: string | null };
 
   const root = document.querySelector('[data-admin-root]');
   if (root instanceof HTMLElement) {
@@ -103,7 +103,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const shown = value === 'all' ? responses : responses.filter(r => r.matching_status === value);
       const list = root.querySelector('[data-response-list]');
       if (!list) return;
-      list.innerHTML = shown.length ? shown.map(r => `<tr><td><strong>${escapeHtml(r.preferred_name)}</strong><small>${escapeHtml(r.email)}</small></td><td>${escapeHtml(r.session)}</td><td><small>${escapeHtml(r.sleep_schedule)} · tidy ${r.tidiness}/5 · ${escapeHtml(r.recharge_style)}</small><span>${escapeHtml(r.suite_priorities.join(', '))}</span></td><td><span class="status-badge ${escapeHtml(r.matching_status)}">${escapeHtml(r.matching_status)}</span></td><td><div class="assignment-control"><select data-assign="${r.id}"><option value="">Unassigned</option>${suites.map(s => `<option value="${s.id}" ${r.suite_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select><button data-save-assignment="${r.id}">Save</button></div></td></tr>`).join('') : '<tr><td colspan="5" class="empty-state">No responses match this view.</td></tr>';
+      list.innerHTML = shown.length ? shown.map(r => `<tr><td><strong>${escapeHtml(r.preferred_name)}</strong><small>${escapeHtml(r.email)}</small></td><td><strong>${escapeHtml(r.session)}</strong><small>${escapeHtml(r.track || 'Legacy response')}</small></td><td><small>${escapeHtml(r.sleep_schedule)} · tidy ${r.tidiness}/5 · ${escapeHtml(r.recharge_style)}</small><span>${escapeHtml(r.suite_priorities.join(', '))}</span></td><td><span class="status-badge ${escapeHtml(r.matching_status)}">${escapeHtml(r.matching_status)}</span></td><td><div class="assignment-control"><select data-assign="${r.id}"><option value="">Unassigned</option>${suites.map(s => `<option value="${s.id}" ${r.suite_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select><button data-save-assignment="${r.id}">Save</button></div></td></tr>`).join('') : '<tr><td colspan="5" class="empty-state">No responses match this view.</td></tr>';
     };
 
     const loadDashboard = async (user: User) => {
@@ -114,7 +114,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       root.querySelectorAll('[data-admin-email]').forEach(el => { el.textContent = user.email ?? ''; });
       const [suiteResult, responseResult] = await Promise.all([
         client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'),
-        client.from('survey_responses').select('id,preferred_name,email,session,sleep_schedule,tidiness,recharge_style,suite_priorities,matching_status,suite_id').order('preferred_name')
+        client.from('survey_responses').select('id,preferred_name,email,track,session,sleep_schedule,tidiness,recharge_style,suite_priorities,matching_status,suite_id').order('preferred_name')
       ]);
       if (suiteResult.error || responseResult.error) { message('Could not load matching data. Check the admin database policies.'); return; }
       suites = (suiteResult.data ?? []) as Suite[];

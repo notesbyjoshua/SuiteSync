@@ -352,6 +352,11 @@
   margin-top: 2rem;
 }
 
+.personal-grid { align-items: start; }
+.personal-grid .field-full { grid-column: 1 / -1; }
+.personal-grid select,
+.personal-grid input { min-height: 3.15rem; }
+
 .field {
   display: grid;
   gap: 0.6rem;

@@ -72,10 +72,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         <span class="step-label">STEP 2 OF 5</span>
         <h2>First, tell us who you are.</h2>
         <p class="section-copy">We’ll use these details to connect this response to your YYGS application.</p>
-        <div class="field-grid">
+        <div class="field-grid personal-grid">
           <label class="field"><span>Preferred name</span><input name="preferred_name" autocomplete="given-name" required maxlength="80" placeholder="What should your suitemates call you?" /></label>
           <label class="field"><span>Application email</span><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com" /></label>
-          <label class="field"><span>YYGS session</span><select name="session" required><option value="">Select a session</option><option>Innovations in Science & Technology</option><option>Literature, Philosophy & Culture</option><option>Politics, Law & Economics</option><option>Solving Global Challenges</option></select></label>
+          <label class="field field-full"><span>YYGS track</span><select name="track" required><option value="">Select a track</option><option value="Innovations in Science & Technology">Innovations in Science & Technology</option><option value="Politics, Law & Economics">Politics, Law & Economics</option><option value="Solving Global Challenges">Solving Global Challenges</option></select></label>
+          <label class="field"><span>YYGS session</span><select name="session" required><option value="">Select a session</option><option value="Session I">Session I</option><option value="Session II">Session II</option><option value="Session III">Session III</option></select></label>
           <label class="field"><span>How old are you?</span><input name="age" type="number" min="15" max="18" required placeholder="16" /><small>You will be given a roommate within two years of your age unless specified otherwise.</small></label>
         </div>
         <fieldset class="question-block compact-options">
@@ -230,7 +231,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       if (!(form instanceof HTMLFormElement)) return;
       const data = new FormData(form);
       const labels = {
-        preferred_name: 'Preferred name', email: 'Application email', session: 'YYGS session', age: 'Age', biological_sex: 'Biological sex', pronouns: 'Pronouns', gender_identity: 'Gender identity', ethnicity: 'Ethnicity', religious_belief: 'Religious belief',
+        preferred_name: 'Preferred name', email: 'Application email', track: 'YYGS track', session: 'YYGS session', age: 'Age', biological_sex: 'Biological sex', pronouns: 'Pronouns', gender_identity: 'Gender identity', ethnicity: 'Ethnicity', religious_belief: 'Religious belief',
         sleep_schedule: 'Daily rhythm', tidiness: 'Shared-space tidiness', recharge_style: 'Recharge style',
         suite_priorities: 'Suite priorities', conflict_style: 'Handling conflict', additional_notes: 'Additional notes'
       };
@@ -312,6 +313,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const response = {
         preferred_name: String(data.get('preferred_name') ?? '').trim(),
         email: String(data.get('email') ?? '').trim().toLowerCase(),
+        track: String(data.get('track') ?? ''),
         session: String(data.get('session') ?? ''),
         age: Number(data.get('age')),
         biological_sex: String(data.get('biological_sex') ?? ''),
