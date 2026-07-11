@@ -2,6 +2,7 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.survey_responses (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references auth.users(id) on delete cascade,
   preferred_name text not null check (char_length(preferred_name) between 1 and 80),
   email text not null unique check (email = lower(email) and char_length(email) <= 254),
   session text not null,
@@ -23,18 +24,20 @@ create table if not exists public.survey_responses (
 alter table public.survey_responses enable row level security;
 
 revoke all on table public.survey_responses from anon, authenticated;
-grant insert on table public.survey_responses to anon, authenticated;
+grant insert on table public.survey_responses to authenticated;
 
 create policy "Applicants can submit survey responses"
 on public.survey_responses
 for insert
-to anon, authenticated
+to authenticated
 with check (
-  matching_status = 'pending'
+  auth.uid() = user_id
+  and email = lower(coalesce(auth.jwt() ->> 'email', ''))
+  and matching_status = 'pending'
   and suite_id is null
   and survey_version = 1
   and consented_at <= now()
 );
 
 comment on table public.survey_responses is
-'Private YYGS suite preference responses. Browser clients may insert only; reads require server-side service-role access.';
+'Private YYGS suite preference responses. Authenticated applicants may insert only for their own verified email; reads require server-side service-role access.';

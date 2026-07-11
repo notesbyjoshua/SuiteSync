@@ -11,7 +11,23 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     <p>Your honest preferences help us build a comfortable, welcoming group. There are no right answers, and your responses do not affect admission.</p>
   </header>
 
-  <div class="survey-layout">
+  <section class="auth-card" data-auth-gate>
+    <div class="auth-icon">✦</div>
+    <span class="step-label">VERIFY YOUR IDENTITY</span>
+    <h2>Sign in with your application email.</h2>
+    <p>We’ll email you a secure sign-in link. Use the same email address associated with your YYGS application.</p>
+    <form data-auth-form>
+      <label class="field">
+        <span>Application email</span>
+        <input type="email" name="auth_email" autocomplete="email" required maxlength="254" placeholder="you@example.com" />
+      </label>
+      <button class="button primary auth-button" type="submit" data-auth-submit>Send secure sign-in link <span>→</span></button>
+    </form>
+    <div class="auth-message" data-auth-message role="status" hidden></div>
+    <p class="privacy-note">No password needed. The link expires automatically and can only be used to access your account.</p>
+  </section>
+
+  <div class="survey-layout" data-survey-layout hidden>
     <aside class="survey-progress" aria-label="Survey progress">
       <div class="progress-heading">
         <span>YOUR PROGRESS</span>
@@ -29,6 +45,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     </aside>
 
     <form class="survey-card" data-survey-form novalidate>
+      <div class="signed-in-banner">
+        <span>Signed in as <strong data-signed-in-email></strong></span>
+        <button type="button" data-sign-out>Sign out</button>
+      </div>
       <section class="survey-section is-active" data-section="0">
         <span class="step-label">STEP 1 OF 5</span>
         <h2>Welcome to residential life</h2>
@@ -53,7 +73,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         <p class="section-copy">We’ll use these details to connect this response to your YYGS application.</p>
         <div class="field-grid">
           <label class="field"><span>Preferred name</span><input name="preferred_name" autocomplete="given-name" required maxlength="80" placeholder="What should your suitemates call you?" /></label>
-          <label class="field"><span>Application email</span><input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com" /></label>
+          <label class="field"><span>Verified application email</span><input name="email" type="email" autocomplete="email" required readonly data-auth-email /></label>
           <label class="field"><span>YYGS session</span><select name="session" required><option value="">Select a session</option><option>Innovations in Science & Technology</option><option>Literature, Philosophy & Culture</option><option>Politics, Law & Economics</option><option>Solving Global Challenges</option></select></label>
           <label class="field"><span>Age when the session begins</span><input name="age" type="number" min="15" max="18" required placeholder="16" /></label>
         </div>
@@ -124,7 +144,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 </div>
 
 <script>
-  import { createClient } from '@supabase/supabase-js';
+  import { createClient, type User } from '@supabase/supabase-js';
 
   const root = document.querySelector('[data-survey-root]');
   if (root instanceof HTMLElement) {
@@ -135,7 +155,81 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     const back = root.querySelector('[data-back]');
     const submit = root.querySelector('[data-submit]');
     const errorBox = root.querySelector('[data-form-error]');
+    const authGate = root.querySelector('[data-auth-gate]');
+    const surveyLayout = root.querySelector('[data-survey-layout]');
+    const authForm = root.querySelector('[data-auth-form]');
+    const authMessage = root.querySelector('[data-auth-message]');
+    const authSubmit = root.querySelector('[data-auth-submit]');
+    const url = root.dataset.supabaseUrl;
+    const key = root.dataset.supabaseKey;
+    const supabase = url && key ? createClient(url, key) : null;
+    let authenticatedUser: User | null = null;
     let current = 0;
+
+    const setAuthMessage = (message = '', kind = 'info') => {
+      if (!(authMessage instanceof HTMLElement)) return;
+      authMessage.textContent = message;
+      authMessage.dataset.kind = kind;
+      authMessage.hidden = !message;
+    };
+
+    const showAuthenticatedSurvey = (user: User) => {
+      authenticatedUser = user;
+      const email = user?.email ?? '';
+      root.querySelectorAll('[data-signed-in-email]').forEach((el) => { el.textContent = email; });
+      root.querySelectorAll('[data-auth-email]').forEach((el) => { if (el instanceof HTMLInputElement) el.value = email; });
+      if (authGate instanceof HTMLElement) authGate.hidden = true;
+      if (surveyLayout instanceof HTMLElement) surveyLayout.hidden = false;
+    };
+
+    const showAuthGate = () => {
+      authenticatedUser = null;
+      if (authGate instanceof HTMLElement) authGate.hidden = false;
+      if (surveyLayout instanceof HTMLElement) surveyLayout.hidden = true;
+    };
+
+    if (!supabase) {
+      setAuthMessage('Supabase is not configured yet. Add the public project URL and publishable key to enable sign-in.', 'error');
+      if (authSubmit instanceof HTMLButtonElement) authSubmit.disabled = true;
+    } else {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) showAuthenticatedSurvey(session.user);
+      else showAuthGate();
+      supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) showAuthenticatedSurvey(session.user);
+        else showAuthGate();
+      });
+    }
+
+    authForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!supabase || !(authForm instanceof HTMLFormElement) || !(authSubmit instanceof HTMLButtonElement)) return;
+      const emailField = authForm.elements.namedItem('auth_email');
+      if (!(emailField instanceof HTMLInputElement) || !emailField.reportValidity()) return;
+      authSubmit.disabled = true;
+      authSubmit.textContent = 'Sending…';
+      setAuthMessage();
+      const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}survey/`;
+      const { error } = await supabase.auth.signInWithOtp({
+        email: emailField.value.trim().toLowerCase(),
+        options: { emailRedirectTo: redirectTo }
+      });
+      if (error) {
+        setAuthMessage('We couldn’t send the sign-in link. Check the email and try again.', 'error');
+        authSubmit.disabled = false;
+        authSubmit.innerHTML = 'Send secure sign-in link <span>→</span>';
+        return;
+      }
+      setAuthMessage('Check your inbox. Open the link in the email to continue your survey.', 'success');
+      authSubmit.textContent = 'Link sent';
+    });
+
+    root.querySelector('[data-sign-out]')?.addEventListener('click', async () => {
+      await supabase?.auth.signOut();
+      if (form instanceof HTMLFormElement) form.reset();
+      current = 0;
+      renderStep();
+    });
 
     const showError = (message = '') => {
       if (!(errorBox instanceof HTMLElement)) return;
@@ -236,19 +330,22 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!validateSection() || !(form instanceof HTMLFormElement) || !(submit instanceof HTMLButtonElement)) return;
-      const url = root.dataset.supabaseUrl;
-      const key = root.dataset.supabaseKey;
-      if (!url || !key) {
+      if (!supabase || !authenticatedUser?.id || !authenticatedUser?.email) {
         const notice = root.querySelector('[data-backend-notice]');
-        if (notice instanceof HTMLElement) notice.hidden = false;
+        if (notice instanceof HTMLElement) {
+          notice.hidden = false;
+          const noticeCopy = notice.querySelector('span');
+          if (noticeCopy) noticeCopy.textContent = 'Your sign-in session expired. Sign in again before submitting.';
+        }
         return;
       }
       submit.disabled = true;
       submit.textContent = 'Submitting…';
       const data = new FormData(form);
       const response = {
+        user_id: authenticatedUser.id,
         preferred_name: String(data.get('preferred_name') ?? '').trim(),
-        email: String(data.get('email') ?? '').trim().toLowerCase(),
+        email: authenticatedUser.email.toLowerCase(),
         session: String(data.get('session') ?? ''),
         age: Number(data.get('age')),
         pronouns: String(data.get('pronouns') ?? '').trim() || null,
@@ -261,7 +358,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         consented_at: new Date().toISOString(),
         survey_version: 1
       };
-      const { error } = await createClient(url, key).from('survey_responses').insert(response);
+      const { error } = await supabase.from('survey_responses').insert(response);
       if (error) {
         showError(error.code === '23505' ? 'A survey has already been submitted for this email.' : 'We couldn’t submit your survey. Please try again in a moment.');
         submit.disabled = false;

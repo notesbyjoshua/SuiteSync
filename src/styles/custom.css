@@ -119,11 +119,63 @@
 }
 
 /* Survey */
+[hidden] { display: none !important; }
+
 .survey-shell {
   margin-inline: auto;
   max-width: 74rem;
   padding: 2rem 1.25rem 7rem;
 }
+
+.auth-card {
+  background: color-mix(in srgb, var(--sl-color-gray-6) 82%, transparent);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 1.4rem;
+  box-shadow: 0 25px 60px color-mix(in srgb, #000 18%, transparent);
+  margin: 0 auto;
+  max-width: 35rem;
+  padding: clamp(1.6rem, 5vw, 3rem);
+  text-align: center;
+}
+
+.auth-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--sl-color-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+  border-radius: 50%;
+  color: var(--sl-color-accent-high);
+  display: flex;
+  height: 3.4rem;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  width: 3.4rem;
+}
+
+.auth-card h2 { font-size: clamp(1.8rem, 5vw, 2.6rem); letter-spacing: -0.04em; margin: 0.7rem 0 1rem; }
+.auth-card > p { color: var(--sl-color-gray-2); line-height: 1.65; }
+.auth-card form { margin-top: 1.8rem; text-align: left; }
+.auth-button { justify-content: space-between; margin-top: 1.2rem; width: 100%; }
+.auth-message { border-radius: 0.7rem; font-size: 0.85rem; margin-top: 1rem; padding: 0.9rem; text-align: left; }
+.auth-message[data-kind='success'] { background: color-mix(in srgb, #34d399 12%, transparent); border: 1px solid #059669; color: #a7f3d0; }
+.auth-message[data-kind='error'] { background: #450a0a; border: 1px solid #b91c1c; color: #fecaca; }
+.auth-card .privacy-note { border-top: 1px solid var(--sl-color-gray-5); font-size: 0.72rem; margin: 1.5rem 0 0; padding-top: 1.2rem; }
+
+.signed-in-banner {
+  align-items: center;
+  background: color-mix(in srgb, #34d399 8%, transparent);
+  border: 1px solid color-mix(in srgb, #34d399 30%, transparent);
+  border-radius: 0.65rem;
+  color: var(--sl-color-gray-2);
+  display: flex;
+  font-size: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.signed-in-banner strong { color: var(--sl-color-white); }
+.signed-in-banner button { background: none; border: 0; color: var(--sl-color-accent-high); cursor: pointer; font: inherit; font-weight: 700; }
+.field input[readonly] { color: var(--sl-color-gray-2); cursor: not-allowed; }
 
 .survey-intro {
   margin: 2rem auto 4rem;

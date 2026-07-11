@@ -16,9 +16,13 @@ Then open `http://localhost:4321`.
 1. Create a Supabase project.
 2. Open the Supabase SQL Editor and run `supabase/migrations/20260711000000_create_survey_responses.sql`.
 3. Copy `.env.example` to `.env` and add the project URL and publishable/anon key from **Project Settings → API**.
-4. Restart `npm run dev`.
+4. Under **Authentication → URL Configuration**, set the Site URL to your deployed site and add both survey URLs as redirect URLs:
+   - `http://localhost:4321/SuiteSync/survey/`
+   - `https://notesbyjoshua.github.io/SuiteSync/survey/`
+5. Keep email authentication enabled under **Authentication → Providers**.
+6. Restart `npm run dev`.
 
-The browser role can only insert survey responses. Row-level security prevents public clients from reading, changing, or deleting responses. Use a server-side service-role client for the future matching algorithm—never expose the service-role key in a `PUBLIC_` variable.
+Applicants sign in through a Supabase email magic link. The browser role can only insert a survey response when its email and user ID match the signed-in account. Row-level security prevents public clients from reading, changing, or deleting responses. Use a server-side service-role client for the future matching algorithm—never expose the service-role key in a `PUBLIC_` variable.
 
 ## GitHub Pages
 
