@@ -1,4 +1,4 @@
-# Orbit
+# SuiteSync
 
 An Astro + Starlight starter using the Ion theme. The Supabase backend is intentionally not implemented yet.
 
@@ -10,6 +10,12 @@ npm run dev
 ```
 
 Then open `http://localhost:4321`.
+
+## GitHub Pages
+
+Pushes to `main` deploy automatically through `.github/workflows/deploy.yml`.
+
+In the GitHub repository, open **Settings → Pages** and set **Source** to **GitHub Actions**. The published site will be available at `https://notesbyjoshua.github.io/SuiteSync/`.
 
 ## Commands
 

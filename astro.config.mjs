@@ -3,11 +3,13 @@ import starlight from '@astrojs/starlight';
 import { ion } from 'starlight-ion-theme';
 
 export default defineConfig({
+  site: 'https://notesbyjoshua.github.io',
+  base: '/SuiteSync',
   integrations: [
     starlight({
-      title: 'Orbit',
+      title: 'SuiteSync',
       description: 'A thoughtful foundation for your next idea.',
-      favicon: '/favicon.svg',
+      favicon: '/SuiteSync/favicon.svg',
       logo: {
         src: './src/assets/logo.svg',
         replacesTitle: true,
