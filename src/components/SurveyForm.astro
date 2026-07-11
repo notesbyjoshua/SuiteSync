@@ -255,7 +255,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const credentials = { email: emailField.value.trim().toLowerCase(), password: passwordField.value };
       const { error } = await supabase.auth.signInWithPassword(credentials);
       if (error) {
-        setAuthMessage('The email or password is incorrect. Contact a SuiteSync administrator if you need an account.', 'error');
+        setAuthMessage('The email or password is incorrect. Contact global.scholars@yale.edu if you need a SuiteSync account.', 'error');
         authButtons.forEach(button => { if (button instanceof HTMLButtonElement) button.disabled = false; });
         return;
       }

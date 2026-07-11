@@ -69,7 +69,7 @@ select id from auth.users
 where email = 'your-admin-email@example.com';
 ```
 
-Only the SQL Editor/service role can grant the initial admin role. Admins can open `/SuiteSync/admin/` to view survey responses, create suites, and assign or unassign applicants. Authorization is enforced by database policies and security-definer functions, not by the page UI.
+Only the SQL Editor/service role can grant the initial admin role. Admins can open `/SuiteSync/admin/` to create applicant accounts, view survey responses, create suites, and assign or unassign applicants. Authorization is enforced by database policies and security-definer functions, not by the page UI. Applicant account support is directed to `global.scholars@yale.edu`.
 
 ## GitHub Pages
 
