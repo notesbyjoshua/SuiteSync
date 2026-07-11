@@ -1,0 +1,54 @@
+---
+title: Orbit
+description: A thoughtful foundation for your next idea.
+template: splash
+hero:
+  tagline: A fast, focused starting point for turning an idea into something people can use.
+  actions:
+    - text: Explore the foundation
+      link: '#foundation'
+      icon: right-arrow
+      variant: primary
+    - text: Why this stack
+      link: '#foundation'
+      icon: information
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<div class="eyebrow">THE START OF SOMETHING GOOD</div>
+
+## Built for momentum
+
+Orbit gives your project a clean, modern home from day one. The frontend is ready now; data, authentication, and real-time features can arrive when the product needs them.
+
+<CardGrid stagger>
+  <Card title="Fast by default" icon="rocket">
+    Astro ships lean pages with excellent performance, so the experience stays quick on every device.
+  </Card>
+  <Card title="Made to grow" icon="puzzle">
+    Start with one clear page, then add product content, guides, and application routes without a rebuild.
+  </Card>
+  <Card title="A backend when you need it" icon="database">
+    The structure leaves room for Supabase authentication, storage, and Postgres without committing too early.
+  </Card>
+</CardGrid>
+
+<section id="foundation" class="foundation">
+  <div>
+    <span class="section-kicker">THE FOUNDATION</span>
+    <h2>Simple now. Capable later.</h2>
+  </div>
+  <p>
+    This first release keeps the scope deliberately sharp: a polished Starlight experience, Ion’s expressive design system, and no unused backend code. When the product direction is clear, Supabase can slot in behind a small, typed client layer.
+  </p>
+</section>
+
+<div class="next-step">
+  <div>
+    <span class="status-dot"></span>
+    <span>Frontend foundation ready</span>
+  </div>
+  <p>Next up: connect Supabase, model your data, and add the first interactive workflow.</p>
+</div>

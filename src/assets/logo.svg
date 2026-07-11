@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 40" role="img" aria-labelledby="title">
+  <title id="title">Orbit</title>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#8ba4ff"/>
+      <stop offset="1" stop-color="#5468ff"/>
+    </linearGradient>
+  </defs>
+  <circle cx="20" cy="20" r="8" fill="url(#g)"/>
+  <ellipse cx="20" cy="20" rx="18" ry="8" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(-25 20 20)"/>
+  <text x="49" y="28" fill="currentColor" font-family="Inter, ui-sans-serif, system-ui" font-size="25" font-weight="700" letter-spacing="-1">Orbit</text>
+</svg>

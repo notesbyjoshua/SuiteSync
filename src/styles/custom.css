@@ -1,0 +1,127 @@
+:root {
+  --sl-color-accent-low: #172554;
+  --sl-color-accent: #6d8cff;
+  --sl-color-accent-high: #dbe5ff;
+  --sl-color-white: #f8fafc;
+  --sl-color-gray-1: #e2e8f0;
+  --sl-color-gray-2: #94a3b8;
+  --sl-color-gray-3: #64748b;
+  --sl-color-gray-4: #334155;
+  --sl-color-gray-5: #1e293b;
+  --sl-color-gray-6: #0f172a;
+  --sl-color-black: #070b16;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e7edff;
+  --sl-color-accent: #3457d5;
+  --sl-color-accent-high: #172554;
+  --sl-color-white: #0f172a;
+  --sl-color-gray-1: #1e293b;
+  --sl-color-gray-2: #475569;
+  --sl-color-gray-3: #64748b;
+  --sl-color-gray-4: #cbd5e1;
+  --sl-color-gray-5: #e2e8f0;
+  --sl-color-gray-6: #f1f5f9;
+  --sl-color-gray-7: #f8fafc;
+  --sl-color-black: #ffffff;
+}
+
+.hero {
+  padding-block: clamp(5rem, 12vw, 9rem) clamp(4rem, 9vw, 7rem);
+}
+
+.hero h1 {
+  letter-spacing: -0.055em;
+  max-width: 11ch;
+}
+
+.hero .tagline {
+  max-width: 42rem;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+}
+
+.eyebrow,
+.section-kicker {
+  color: var(--sl-color-accent-high);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.sl-markdown-content > h2 {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  letter-spacing: -0.04em;
+  margin-top: 0.45rem;
+}
+
+.card-grid {
+  margin-top: 2.5rem;
+}
+
+.card {
+  border-radius: 1rem;
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--sl-color-accent) 55%, transparent);
+  transform: translateY(-3px);
+}
+
+.foundation {
+  align-items: start;
+  border-block: 1px solid var(--sl-color-gray-5);
+  display: grid;
+  gap: 2rem 5rem;
+  grid-template-columns: minmax(14rem, 0.8fr) 1.2fr;
+  margin-top: 6rem;
+  padding-block: 4rem;
+}
+
+.foundation h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.04em;
+  margin-top: 0.6rem;
+}
+
+.foundation p {
+  color: var(--sl-color-gray-2);
+  font-size: 1.12rem;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.next-step {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent) 13%, var(--sl-color-gray-6)), var(--sl-color-gray-6));
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 1.25rem;
+  margin-block: 3rem 6rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.next-step > div {
+  align-items: center;
+  display: flex;
+  font-weight: 700;
+  gap: 0.65rem;
+}
+
+.next-step p {
+  color: var(--sl-color-gray-2);
+  margin: 0.75rem 0 0 1.4rem;
+}
+
+.status-dot {
+  background: #34d399;
+  border-radius: 999px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, #34d399 15%, transparent);
+  height: 0.65rem;
+  width: 0.65rem;
+}
+
+@media (max-width: 50rem) {
+  .foundation {
+    grid-template-columns: 1fr;
+  }
+}
