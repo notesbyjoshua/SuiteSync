@@ -1,0 +1,2 @@
+-- Optional local-development seed data belongs here.
+-- Keep production applicant information out of this file.

@@ -22,6 +22,43 @@ Then open `http://localhost:4321`.
 
 Applicants create an email-and-password Supabase account or sign in to an existing account. The browser role can only insert a survey response when its email and user ID match the signed-in account. Row-level security prevents public clients from reading, changing, or deleting responses. Use a server-side service-role client for the future matching algorithm—never expose the service-role key in a `PUBLIC_` variable.
 
+## Supabase CLI
+
+The CLI is installed locally as a development dependency. Use it through `npx supabase` or the npm scripts instead of installing a global copy.
+
+```sh
+# Authenticate the CLI (opens the browser or asks for an access token)
+npx supabase login
+
+# Find the project reference in the dashboard URL or Project Settings
+npx supabase link --project-ref YOUR_PROJECT_REF
+
+# Preview migrations that have not been applied remotely
+npx supabase db push --dry-run
+
+# Apply new migrations to the linked Supabase project
+npm run supabase:push
+```
+
+If a migration was previously run manually in the SQL Editor, mark only that exact version as applied before using `db push`:
+
+```sh
+npx supabase migration repair 20260711000000 --status applied
+```
+
+Repeat with `20260711010000`, `20260711020000`, or `20260711030000` only for migrations you already ran successfully. Use `npx supabase migration list` to compare local and remote history.
+
+Local Supabase development requires Docker:
+
+```sh
+npm run supabase:start
+npm run supabase:status
+npm run supabase:reset
+npm run supabase:stop
+```
+
+`supabase:reset` deletes and recreates only the local development database. Do not use destructive remote database reset commands on production.
+
 ## Admin matching dashboard
 
 Run `supabase/migrations/20260711020000_create_admin_matching.sql` after the survey migrations. Sign in once with the future administrator email, then add that account as the first administrator from the Supabase SQL Editor:

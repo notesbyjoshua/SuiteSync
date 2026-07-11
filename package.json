@@ -8,7 +8,12 @@
     "start": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:push": "supabase db push",
+    "supabase:reset": "supabase db reset"
   },
   "dependencies": {
     "@astrojs/starlight": "~0.39.1",
@@ -18,6 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "supabase": "^2.109.1",
     "typescript": "^5.9.3"
   }
 }
