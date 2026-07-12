@@ -183,8 +183,8 @@
 .field input[readonly] { color: var(--sl-color-gray-2); cursor: not-allowed; }
 
 .survey-intro {
-  margin: 2rem auto 4rem;
-  max-width: 50rem;
+  margin: 2rem 0 4rem 17rem;
+  max-width: none;
   text-align: center;
 }
 
@@ -552,7 +552,7 @@
   .survey-progress ol { display: none; }
   .survey-progress > p { display: none; }
   .field-grid { grid-template-columns: 1fr; }
-  .survey-intro { margin-bottom: 2rem; }
+  .survey-intro { margin: 0 0 2rem; }
   .back-link { margin-bottom: 2.5rem; }
   .review-list div { gap: 0.3rem; grid-template-columns: 1fr; }
   .range-field > span { align-items: start; flex-direction: column; gap: 0.3rem; }
