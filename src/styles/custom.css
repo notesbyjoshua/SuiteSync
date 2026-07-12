@@ -516,7 +516,7 @@
 .panel-heading h2 { font-size: 1.5rem; letter-spacing: -0.03em; margin: 0.45rem 0 0; }
 .panel-heading label { color: var(--sl-color-gray-3); font-size: 0.75rem; }
 .panel-heading select, .assignment-control select { background: var(--sl-color-gray-6); border: 1px solid var(--sl-color-gray-4); border-radius: 0.45rem; color: var(--sl-color-white); margin-left: 0.4rem; padding: 0.45rem; }
-.create-suite-form { align-items: end; display: grid; gap: 1rem; grid-template-columns: 1.2fr 1fr 0.55fr 1fr 0.55fr auto; }
+.create-suite-form { align-items: end; display: grid; gap: 1rem; grid-template-columns: 1.2fr 0.8fr 0.45fr 0.9fr 0.55fr 0.55fr auto; }
 .create-suite-form .field { margin: 0; }
 .create-suite-form .button { margin: 0; white-space: nowrap; }
 .create-account-form { grid-template-columns: 1fr 1fr auto; }

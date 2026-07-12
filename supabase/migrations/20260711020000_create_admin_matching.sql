@@ -35,6 +35,8 @@ create table if not exists public.suites (
   session text,
   floor smallint check (floor between 1 and 4),
   college text check (college in ('pauli_murray', 'benjamin_franklin')),
+  single_rooms smallint check (single_rooms >= 0),
+  double_rooms smallint check (double_rooms >= 0),
   capacity smallint not null default 6 check (capacity between 4 and 6),
   status text not null default 'draft' check (status in ('draft', 'ready', 'released')),
   created_by uuid not null references auth.users(id),

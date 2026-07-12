@@ -22,7 +22,7 @@ Deno.serve(async (request) => {
 
     if (body.action === 'load') {
       const [suites, responses, runs] = await Promise.all([
-        client.from('suites').select('id,name,session,floor,college,capacity,status,suite_members(count)').order('name'),
+        client.from('suites').select('id,name,session,floor,college,single_rooms,double_rooms,capacity,status,suite_members(count)').order('name'),
         client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at'),
         client.from('matching_runs').select('id,status,trigger_type,scheduled_for,started_at,created_at').order('created_at', { ascending: false }).limit(10),
       ]);
@@ -37,7 +37,11 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === 'create_suite') {
-      const { error } = await client.from('suites').insert({ name: body.name, session: body.session || null, floor: body.floor, college: body.college, capacity: body.capacity, created_by: admin.user_id });
+      const singleRooms = Number(body.singleRooms);
+      const doubleRooms = Number(body.doubleRooms);
+      const capacity = singleRooms + doubleRooms * 2;
+      if (!Number.isInteger(singleRooms) || !Number.isInteger(doubleRooms) || singleRooms < 0 || doubleRooms < 0 || capacity < 4 || capacity > 6) throw new Error('Single and double rooms must create capacity for 4–6 students');
+      const { error } = await client.from('suites').insert({ name: body.name, session: body.session || null, floor: body.floor, college: body.college, single_rooms: singleRooms, double_rooms: doubleRooms, capacity, created_by: admin.user_id });
       if (error) throw error;
       return json({ success: true });
     }
