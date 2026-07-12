@@ -1,0 +1,33 @@
+alter table public.suites add column if not exists housing_group text check (housing_group in ('male', 'female', 'gender_inclusive'));
+alter table public.survey_responses add column if not exists matching_score numeric(6,4) check (matching_score between 0 and 1);
+alter table public.matching_runs add column if not exists summary jsonb;
+
+create or replace function public.apply_matching_assignments(assignment_data jsonb, matching_run_id uuid, actor_user_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare item jsonb;
+begin
+  if jsonb_array_length(assignment_data) = 0 then raise exception 'No assignments supplied'; end if;
+  if exists (select 1 from jsonb_array_elements(assignment_data) item group by item->>'response_id' having count(*) > 1) then raise exception 'Duplicate applicant assignment'; end if;
+  if exists (
+    select 1 from (
+      select (item->>'suite_id')::uuid suite_id, count(*) assigned
+      from jsonb_array_elements(assignment_data) item group by (item->>'suite_id')::uuid
+    ) counts join public.suites s on s.id = counts.suite_id where counts.assigned > s.capacity
+  ) then raise exception 'Assignment exceeds suite capacity'; end if;
+
+  delete from public.suite_members;
+  update public.survey_responses set suite_id = null, matching_status = 'pending', matching_score = null where matching_status <> 'excluded';
+  update public.suites set housing_group = null;
+
+  for item in select * from jsonb_array_elements(assignment_data) loop
+    insert into public.suite_members (suite_id, response_id, assigned_by)
+    values ((item->>'suite_id')::uuid, (item->>'response_id')::uuid, actor_user_id);
+    update public.survey_responses set suite_id = (item->>'suite_id')::uuid, matching_status = 'matched', matching_score = (item->>'score')::numeric
+    where id = (item->>'response_id')::uuid;
+    update public.suites set housing_group = item->>'housing_group' where id = (item->>'suite_id')::uuid;
+  end loop;
+end;
+$$;
+
+revoke all on function public.apply_matching_assignments(jsonb, uuid, uuid) from public;
+grant execute on function public.apply_matching_assignments(jsonb, uuid, uuid) to service_role;

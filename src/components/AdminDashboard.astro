@@ -41,7 +41,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     <section class="admin-panel matching-controls">
       <div class="panel-heading"><div><span class="step-label">MATCHING ALGORITHM</span><h2>Start or schedule matching</h2></div></div>
-      <p class="admin-helper">These controls create an auditable matching run. Until the matching algorithm is implemented, runs remain marked as awaiting implementation and do not change suite assignments.</p>
+      <p class="admin-helper">Manual runs use greedy assignment followed by local-search swaps. Results update draft suite assignments for staff review and are never released automatically.</p>
       <div class="matching-action-grid">
         <article>
           <h3>Run manually</h3>
@@ -72,7 +72,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       <div class="panel-heading"><div><span class="step-label">SUITES</span><h2>Create and monitor suites</h2></div></div>
       <form class="create-suite-form" data-create-suite>
         <label class="field"><span>Suite name</span><input name="name" required maxlength="80" placeholder="e.g. Davenport 201" /></label>
-        <label class="field"><span>Session <small>(optional)</small></span><input name="session" maxlength="100" placeholder="e.g. IST" /></label>
+        <label class="field"><span>Session</span><select name="session" required><option value="">Select</option><option value="Session I">Session I</option><option value="Session II">Session II</option><option value="Session III">Session III</option></select></label>
         <label class="field"><span>Floor</span><select name="floor" required><option value="">Select</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
         <label class="field"><span>Campus / college</span><select name="college" required><option value="">Select a college</option><option value="pauli_murray">Pauli Murray</option><option value="benjamin_franklin">Benjamin Franklin</option></select></label>
         <label class="field"><span>Single rooms</span><input name="single_rooms" type="number" min="0" max="6" value="2" required /></label>
@@ -240,9 +240,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       }
       if (!client) return;
       const button = event.currentTarget; button.disabled = true;
-      const { error } = await client.rpc('admin_start_matching'); button.disabled = false;
+      const { error } = await client.functions.invoke('run-matching'); button.disabled = false;
       if (error) { message(error.message); return; }
-      message('Matching run created. The algorithm worker is not implemented yet.', 'success'); await refreshRuns();
+      message('Matching completed. Review the proposed suite assignments below.', 'success');
+      const { data: refreshedResponses } = await client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at'); responses = (refreshedResponses ?? []) as Response[];
+      await refreshRuns();
     });
 
     root.querySelector('[data-schedule-matching]')?.addEventListener('submit', async (event) => {

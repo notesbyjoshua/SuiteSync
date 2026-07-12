@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { executeMatching } from '../_shared/matching.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,9 +64,7 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === 'start_matching') {
-      const { error } = await client.from('matching_runs').insert({ status: 'awaiting_implementation', trigger_type: 'manual', started_at: new Date().toISOString(), created_by: admin.user_id, notes: 'Algorithm worker has not been implemented.' });
-      if (error) throw error;
-      return json({ success: true });
+      return json(await executeMatching(client, admin.user_id));
     }
 
     if (body.action === 'schedule_matching') {

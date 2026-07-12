@@ -1,0 +1,139 @@
+type Student = {
+  id: string; session: string; age: number; gender_identity: string;
+  extroversion: number | null; organization: number | null; sound_level: number | null;
+  bedtime_preference: string | null; preferred_suitemates: number | null;
+  room_type: string | null; floor_preference: string | null; college_preference: string | null;
+};
+type Suite = {
+  id: string; session: string | null; capacity: number; floor: number | null; college: string | null;
+  single_rooms: number | null; double_rooms: number | null; members: Student[]; housingGroup: string | null; targetSize?: number;
+};
+
+const bedtimeMinutes: Record<string, number> = { '21:00': 0, '21:30': 30, '22:00': 60, '22:30': 90, '23:00': 120, '23:30': 150, '00:00_or_later': 180 };
+const similarity = (a: number | null, b: number | null, range: number) => a == null || b == null ? 0.5 : 1 - Math.min(Math.abs(a - b) / range, 1);
+const housingGroup = (student: Student) => student.gender_identity === 'male' ? 'male' : student.gender_identity === 'female' ? 'female' : 'gender_inclusive';
+
+function pairScore(a: Student, b: Student) {
+  return (
+    similarity(a.extroversion, b.extroversion, 4) * 0.2 +
+    similarity(a.organization, b.organization, 4) * 0.25 +
+    similarity(a.sound_level, b.sound_level, 4) * 0.25 +
+    similarity(bedtimeMinutes[a.bedtime_preference || ''] ?? null, bedtimeMinutes[b.bedtime_preference || ''] ?? null, 180) * 0.2 +
+    similarity(a.age, b.age, 3) * 0.1
+  );
+}
+
+function locationScore(student: Student, suite: Suite) {
+  const college = student.college_preference === 'no_preference' || !student.college_preference ? 1 : student.college_preference === suite.college ? 1 : 0;
+  const floor = student.floor_preference === 'no_preference' || !student.floor_preference ? 1 : student.floor_preference === 'higher' ? ((suite.floor ?? 1) >= 3 ? 1 : 0) : ((suite.floor ?? 4) <= 2 ? 1 : 0);
+  return (college + floor) / 2;
+}
+
+function roomScore(student: Student, suite: Suite) {
+  if (!student.room_type || student.room_type === 'no_preference') return 1;
+  if (student.room_type === 'single') return (suite.single_rooms ?? 0) > 0 ? 1 : 0;
+  return (suite.double_rooms ?? 0) > 0 ? 1 : 0;
+}
+
+function placementScore(student: Student, suite: Suite, excludingId?: string) {
+  const peers = suite.members.filter(member => member.id !== excludingId);
+  const compatibility = peers.length ? peers.reduce((sum, peer) => sum + pairScore(student, peer), 0) / peers.length : 0.7;
+  const futureSuitemates = peers.length;
+  const size = student.preferred_suitemates == null ? 0.7 : 1 - Math.min(Math.abs(student.preferred_suitemates - futureSuitemates) / 8, 1);
+  return compatibility * 0.55 + locationScore(student, suite) * 0.15 + roomScore(student, suite) * 0.15 + size * 0.15;
+}
+
+function eligible(student: Student, suite: Suite) {
+  const group = housingGroup(student);
+  return (!suite.session || suite.session === student.session) && suite.members.length < (suite.targetSize ?? suite.capacity) && (!suite.housingGroup || suite.housingGroup === group);
+}
+
+function optionCount(student: Student, suites: Suite[]) {
+  return suites.filter(suite => eligible(student, suite) && locationScore(student, suite) > 0 && roomScore(student, suite) > 0).length;
+}
+
+export async function executeMatching(client: any, actorId: string, triggerType: 'manual' | 'scheduled' = 'manual') {
+  const { data: run, error: runError } = await client.from('matching_runs').insert({ status: 'running', trigger_type: triggerType, started_at: new Date().toISOString(), created_by: actorId }).select('id').single();
+  if (runError) throw runError;
+  try {
+    const [studentResult, suiteResult] = await Promise.all([
+      client.from('survey_responses').select('id,session,age,gender_identity,extroversion,organization,sound_level,bedtime_preference,preferred_suitemates,room_type,floor_preference,college_preference').neq('matching_status', 'excluded'),
+      client.from('suites').select('id,session,capacity,floor,college,single_rooms,double_rooms').order('created_at'),
+    ]);
+    if (studentResult.error || suiteResult.error) throw studentResult.error || suiteResult.error;
+    const students = (studentResult.data ?? []) as Student[];
+    const suites = (suiteResult.data ?? []).map((suite: any) => ({ ...suite, members: [], housingGroup: null })) as Suite[];
+    if (!students.length) throw new Error('No eligible survey responses are available');
+    if (suites.reduce((sum, suite) => sum + suite.capacity, 0) < students.length) throw new Error('Not enough suite capacity for all eligible applicants');
+
+    const grouped = new Map<string, Student[]>();
+    for (const student of students) {
+      const key = `${student.session}::${housingGroup(student)}`;
+      grouped.set(key, [...(grouped.get(key) ?? []), student]);
+    }
+    const reserved = new Set<string>();
+    const groups = [...grouped.entries()].sort(([, a], [, b]) => b.length - a.length);
+    for (const [, groupStudents] of groups) {
+      const sample = groupStudents[0];
+      const minimumSuites = Math.ceil(groupStudents.length / 6);
+      const maximumSuites = Math.floor(groupStudents.length / 4);
+      if (maximumSuites < minimumSuites) throw new Error(`${sample.session} ${housingGroup(sample)} has ${groupStudents.length} applicants, which cannot form suites of 4–6`);
+      const candidates = suites.filter(suite => !reserved.has(suite.id) && (!suite.session || suite.session === sample.session));
+      candidates.sort((a, b) => {
+        const preferenceA = groupStudents.reduce((sum, student) => sum + locationScore(student, a) + roomScore(student, a), 0);
+        const preferenceB = groupStudents.reduce((sum, student) => sum + locationScore(student, b) + roomScore(student, b), 0);
+        return preferenceB - preferenceA || b.capacity - a.capacity || a.id.localeCompare(b.id);
+      });
+      let selected: Suite[] | null = null;
+      for (let count = minimumSuites; count <= maximumSuites; count++) {
+        const attempt = candidates.slice(0, count);
+        if (attempt.length === count && attempt.reduce((sum, suite) => sum + suite.capacity, 0) >= groupStudents.length) { selected = attempt; break; }
+      }
+      if (!selected) throw new Error(`Not enough compatible suite inventory for ${sample.session} ${housingGroup(sample)}`);
+      selected.forEach(suite => { reserved.add(suite.id); suite.housingGroup = housingGroup(sample); suite.targetSize = 4; });
+      let remaining = groupStudents.length - selected.length * 4;
+      for (const suite of selected) while (remaining > 0 && (suite.targetSize ?? 4) < suite.capacity && (suite.targetSize ?? 4) < 6) { suite.targetSize = (suite.targetSize ?? 4) + 1; remaining--; }
+      if (remaining) throw new Error(`Suite capacities cannot fit ${sample.session} ${housingGroup(sample)} applicants`);
+
+      const ordered = [...groupStudents].sort((a, b) => optionCount(a, selected!) - optionCount(b, selected!) || a.id.localeCompare(b.id));
+      for (const student of ordered) {
+        const available = selected.filter(suite => eligible(student, suite));
+        available.sort((a, b) => placementScore(student, b) - placementScore(student, a) || a.id.localeCompare(b.id));
+        if (!available.length) throw new Error(`No eligible suite remains for a ${student.session} ${housingGroup(student)} applicant`);
+        available[0].members.push(student);
+      }
+    }
+
+    let improved = true;
+    let passes = 0;
+    while (improved && passes++ < 50) {
+      improved = false;
+      outer: for (let i = 0; i < suites.length; i++) for (let j = i + 1; j < suites.length; j++) {
+        const left = suites[i], right = suites[j];
+        if (left.housingGroup !== right.housingGroup || (left.session && right.session && left.session !== right.session)) continue;
+        for (const a of [...left.members]) for (const b of [...right.members]) {
+          if (a.session !== b.session || housingGroup(a) !== housingGroup(b)) continue;
+          const beforeA = placementScore(a, left, a.id), beforeB = placementScore(b, right, b.id);
+          const afterA = placementScore(a, right, b.id), afterB = placementScore(b, left, a.id);
+          const totalGain = afterA + afterB - beforeA - beforeB;
+          const protectsWorst = Math.min(afterA, afterB) > Math.min(beforeA, beforeB) + 0.05 && totalGain > -0.02;
+          if (totalGain > 0.001 || protectsWorst) {
+            left.members = left.members.filter(member => member.id !== a.id); right.members = right.members.filter(member => member.id !== b.id);
+            left.members.push(b); right.members.push(a); improved = true; break outer;
+          }
+        }
+      }
+    }
+
+    const assignments = suites.flatMap(suite => suite.members.map(student => ({ response_id: student.id, suite_id: suite.id, score: Number(placementScore(student, suite, student.id).toFixed(4)), housing_group: suite.housingGroup })));
+    const scores = assignments.map(item => item.score);
+    const summary = { applicants: students.length, suites_used: suites.filter(s => s.members.length).length, local_search_passes: passes, average_score: scores.reduce((a, b) => a + b, 0) / scores.length, minimum_score: Math.min(...scores) };
+    const { error: applyError } = await client.rpc('apply_matching_assignments', { assignment_data: assignments, matching_run_id: run.id, actor_user_id: actorId });
+    if (applyError) throw applyError;
+    await client.from('matching_runs').update({ status: 'completed', completed_at: new Date().toISOString(), summary }).eq('id', run.id);
+    return { runId: run.id, summary };
+  } catch (error) {
+    await client.from('matching_runs').update({ status: 'failed', completed_at: new Date().toISOString(), notes: error instanceof Error ? error.message : 'Matching failed' }).eq('id', run.id);
+    throw error;
+  }
+}
