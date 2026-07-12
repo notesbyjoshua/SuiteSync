@@ -1,5 +1,5 @@
 type Student = {
-  id: string; session: string; age: number; gender_identity: string;
+  id: string; session: string; age: number; gender_identity: string; submitted_at: string;
   extroversion: number | null; organization: number | null; sound_level: number | null;
   bedtime_preference: string | null; preferred_suitemates: number | null;
   room_type: string | null; floor_preference: string | null; college_preference: string | null;
@@ -57,7 +57,7 @@ export async function executeMatching(client: any, actorId: string, triggerType:
   if (runError) throw runError;
   try {
     const [studentResult, suiteResult] = await Promise.all([
-      client.from('survey_responses').select('id,session,age,gender_identity,extroversion,organization,sound_level,bedtime_preference,preferred_suitemates,room_type,floor_preference,college_preference').neq('matching_status', 'excluded'),
+      client.from('survey_responses').select('id,session,age,gender_identity,extroversion,organization,sound_level,bedtime_preference,preferred_suitemates,room_type,floor_preference,college_preference,submitted_at').neq('matching_status', 'excluded'),
       client.from('suites').select('id,session,capacity,floor,college,single_rooms,double_rooms').order('created_at'),
     ]);
     if (studentResult.error || suiteResult.error) throw studentResult.error || suiteResult.error;
@@ -75,9 +75,8 @@ export async function executeMatching(client: any, actorId: string, triggerType:
     const groups = [...grouped.entries()].sort(([, a], [, b]) => b.length - a.length);
     for (const [, groupStudents] of groups) {
       const sample = groupStudents[0];
-      const minimumSuites = Math.ceil(groupStudents.length / 6);
-      const maximumSuites = Math.floor(groupStudents.length / 4);
-      if (maximumSuites < minimumSuites) throw new Error(`${sample.session} ${housingGroup(sample)} has ${groupStudents.length} applicants, which cannot form suites of 4–6`);
+      const minimumSuites = Math.ceil(groupStudents.length / 9);
+      const maximumSuites = groupStudents.length;
       const candidates = suites.filter(suite => !reserved.has(suite.id) && (!suite.session || suite.session === sample.session));
       candidates.sort((a, b) => {
         const preferenceA = groupStudents.reduce((sum, student) => sum + locationScore(student, a) + roomScore(student, a), 0);
@@ -90,9 +89,9 @@ export async function executeMatching(client: any, actorId: string, triggerType:
         if (attempt.length === count && attempt.reduce((sum, suite) => sum + suite.capacity, 0) >= groupStudents.length) { selected = attempt; break; }
       }
       if (!selected) throw new Error(`Not enough compatible suite inventory for ${sample.session} ${housingGroup(sample)}`);
-      selected.forEach(suite => { reserved.add(suite.id); suite.housingGroup = housingGroup(sample); suite.targetSize = 4; });
-      let remaining = groupStudents.length - selected.length * 4;
-      for (const suite of selected) while (remaining > 0 && (suite.targetSize ?? 4) < suite.capacity && (suite.targetSize ?? 4) < 6) { suite.targetSize = (suite.targetSize ?? 4) + 1; remaining--; }
+      selected.forEach(suite => { reserved.add(suite.id); suite.housingGroup = housingGroup(sample); suite.targetSize = 1; });
+      let remaining = groupStudents.length - selected.length;
+      for (const suite of selected) while (remaining > 0 && (suite.targetSize ?? 1) < suite.capacity && (suite.targetSize ?? 1) < 9) { suite.targetSize = (suite.targetSize ?? 1) + 1; remaining--; }
       if (remaining) throw new Error(`Suite capacities cannot fit ${sample.session} ${housingGroup(sample)} applicants`);
 
       const ordered = [...groupStudents].sort((a, b) => optionCount(a, selected!) - optionCount(b, selected!) || a.id.localeCompare(b.id));
@@ -125,7 +124,17 @@ export async function executeMatching(client: any, actorId: string, triggerType:
       }
     }
 
-    const assignments = suites.flatMap(suite => suite.members.map(student => ({ response_id: student.id, suite_id: suite.id, score: Number(placementScore(student, suite, student.id).toFixed(4)), housing_group: suite.housingGroup })));
+    const assignments = suites.flatMap(suite => {
+      const minimumSingles = Math.max(0, suite.members.length - (suite.double_rooms ?? 0) * 2);
+      const availableSingles = Math.min(suite.single_rooms ?? 0, suite.members.length);
+      const singleCount = Math.max(minimumSingles, Math.min(availableSingles, suite.members.filter(student => student.room_type === 'single').length));
+      const roomOrder = [...suite.members].sort((a, b) => {
+        const rank = (student: Student) => student.room_type === 'single' ? 0 : student.room_type === 'no_preference' ? 1 : 2;
+        return rank(a) - rank(b) || a.submitted_at.localeCompare(b.submitted_at) || a.id.localeCompare(b.id);
+      });
+      const singleIds = new Set(roomOrder.slice(0, singleCount).map(student => student.id));
+      return suite.members.map(student => ({ response_id: student.id, suite_id: suite.id, score: Number(placementScore(student, suite, student.id).toFixed(4)), housing_group: suite.housingGroup, assigned_room_type: singleIds.has(student.id) ? 'single' : 'double' }));
+    });
     const scores = assignments.map(item => item.score);
     const summary = { applicants: students.length, suites_used: suites.filter(s => s.members.length).length, local_search_passes: passes, average_score: scores.reduce((a, b) => a + b, 0) / scores.length, minimum_score: Math.min(...scores) };
     const { error: applyError } = await client.rpc('apply_matching_assignments', { assignment_data: assignments, matching_run_id: run.id, actor_user_id: actorId });
@@ -133,7 +142,8 @@ export async function executeMatching(client: any, actorId: string, triggerType:
     await client.from('matching_runs').update({ status: 'completed', completed_at: new Date().toISOString(), summary }).eq('id', run.id);
     return { runId: run.id, summary };
   } catch (error) {
-    await client.from('matching_runs').update({ status: 'failed', completed_at: new Date().toISOString(), notes: error instanceof Error ? error.message : 'Matching failed' }).eq('id', run.id);
-    throw error;
+    const message = error instanceof Error ? error.message : typeof error === 'object' && error && 'message' in error ? String(error.message) : JSON.stringify(error);
+    await client.from('matching_runs').update({ status: 'failed', completed_at: new Date().toISOString(), notes: message }).eq('id', run.id);
+    throw new Error(message || 'Matching failed');
   }
 }

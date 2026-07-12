@@ -25,7 +25,7 @@ begin
   if suite_single_rooms < 0 or suite_double_rooms < 0 then raise exception 'Room counts cannot be negative'; end if;
 
   calculated_capacity := suite_single_rooms + (suite_double_rooms * 2);
-  if calculated_capacity not between 4 and 6 then raise exception 'Room inventory must provide capacity for 4–6 students'; end if;
+  if calculated_capacity not between 1 and 9 then raise exception 'Room inventory must provide capacity for 1–9 students'; end if;
 
   insert into public.suites (name, capacity, session, floor, college, single_rooms, double_rooms, created_by)
   values (trim(suite_name), calculated_capacity, nullif(trim(suite_session), ''), suite_floor, suite_college, suite_single_rooms, suite_double_rooms, auth.uid())

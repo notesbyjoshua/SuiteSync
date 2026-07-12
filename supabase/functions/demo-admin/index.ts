@@ -41,7 +41,7 @@ Deno.serve(async (request) => {
       const singleRooms = Number(body.singleRooms);
       const doubleRooms = Number(body.doubleRooms);
       const capacity = singleRooms + doubleRooms * 2;
-      if (!Number.isInteger(singleRooms) || !Number.isInteger(doubleRooms) || singleRooms < 0 || doubleRooms < 0 || capacity < 4 || capacity > 6) throw new Error('Single and double rooms must create capacity for 4–6 students');
+      if (!Number.isInteger(singleRooms) || !Number.isInteger(doubleRooms) || singleRooms < 0 || doubleRooms < 0 || capacity < 1 || capacity > 9) throw new Error('Single and double rooms must create capacity for 1–9 students');
       const { error } = await client.from('suites').insert({ name: body.name, session: body.session || null, floor: body.floor, college: body.college, single_rooms: singleRooms, double_rooms: doubleRooms, capacity, created_by: admin.user_id });
       if (error) throw error;
       return json({ success: true });

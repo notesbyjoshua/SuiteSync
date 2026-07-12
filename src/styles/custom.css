@@ -572,6 +572,7 @@
 .member-panel { padding: 1.4rem; }
 .member-panel h2 { font-size: 1.35rem; letter-spacing: -0.03em; margin: 0.5rem 0; }
 .member-panel > p { color: var(--sl-color-gray-3); font-size: 0.75rem; }
+.member-panel .room-assignment { background: var(--sl-color-accent-low); border-radius: 0.55rem; color: var(--sl-color-accent-high); margin-top: 1rem; padding: 0.65rem; }
 .member-panel h3 { border-top: 1px solid var(--sl-color-gray-5); font-size: 0.72rem; margin-top: 1.5rem; padding-top: 1.2rem; text-transform: uppercase; }
 .member-panel ul { display: grid; gap: 0.7rem; list-style: none; margin: 1rem 0; padding: 0; }
 .member-panel li { align-items: center; display: flex; font-size: 0.82rem; font-weight: 600; gap: 0.6rem; }

@@ -1,7 +1,3 @@
-alter table public.suites add column if not exists housing_group text check (housing_group in ('male', 'female', 'gender_inclusive'));
-alter table public.survey_responses add column if not exists matching_score numeric(6,4) check (matching_score between 0 and 1);
-alter table public.matching_runs add column if not exists summary jsonb;
-
 create or replace function public.apply_matching_assignments(assignment_data jsonb, matching_run_id uuid, actor_user_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare assignment_item jsonb;
@@ -28,6 +24,3 @@ begin
   end loop;
 end;
 $$;
-
-revoke all on function public.apply_matching_assignments(jsonb, uuid, uuid) from public;
-grant execute on function public.apply_matching_assignments(jsonb, uuid, uuid) to service_role;

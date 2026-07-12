@@ -75,8 +75,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         <label class="field"><span>Session</span><select name="session" required><option value="">Select</option><option value="Session I">Session I</option><option value="Session II">Session II</option><option value="Session III">Session III</option></select></label>
         <label class="field"><span>Floor</span><select name="floor" required><option value="">Select</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
         <label class="field"><span>Campus / college</span><select name="college" required><option value="">Select a college</option><option value="pauli_murray">Pauli Murray</option><option value="benjamin_franklin">Benjamin Franklin</option></select></label>
-        <label class="field"><span>Single rooms</span><input name="single_rooms" type="number" min="0" max="6" value="2" required /></label>
-        <label class="field"><span>Double rooms</span><input name="double_rooms" type="number" min="0" max="3" value="2" required /></label>
+        <label class="field"><span>Single rooms</span><input name="single_rooms" type="number" min="0" max="9" value="2" required /></label>
+        <label class="field"><span>Double rooms</span><input name="double_rooms" type="number" min="0" max="4" value="2" required /></label>
         <button class="button primary" type="submit">Create suite</button>
       </form>
       <div class="suite-grid" data-suite-grid></div>
@@ -93,7 +93,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 <script>
   import { createClient, type User } from '@supabase/supabase-js';
   type Suite = { id: string; name: string; session: string | null; floor: number | null; college: string | null; single_rooms: number | null; double_rooms: number | null; capacity: number; status: string; suite_members: { count: number }[] };
-  type Response = { id: string; preferred_name: string; email: string; track: string | null; session: string; extroversion: number | null; organization: number | null; room_type: string | null; bedtime_preference: string | null; preferred_suitemates: number | null; floor_preference: string | null; college_preference: string | null; sound_level: number | null; submitted_at: string; matching_status: string; suite_id: string | null };
+  type Response = { id: string; preferred_name: string; email: string; track: string | null; session: string; extroversion: number | null; organization: number | null; room_type: string | null; assigned_room_type: string | null; bedtime_preference: string | null; preferred_suitemates: number | null; floor_preference: string | null; college_preference: string | null; sound_level: number | null; submitted_at: string; matching_status: string; suite_id: string | null };
   type MatchingRun = { id: string; status: string; trigger_type: string; scheduled_for: string | null; started_at: string | null; created_at: string };
 
   const root = document.querySelector('[data-admin-root]');
@@ -164,7 +164,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const shown = value === 'all' ? responses : responses.filter(r => r.matching_status === value);
       const list = root.querySelector('[data-response-list]');
       if (!list) return;
-      list.innerHTML = shown.length ? shown.map(r => `<tr><td><strong>${escapeHtml(r.preferred_name)}</strong><small>${escapeHtml(r.email)}</small><small>Submitted ${escapeHtml(formatSubmittedAt(r.submitted_at))}</small></td><td><strong>${escapeHtml(r.session)}</strong><small>${escapeHtml(r.track || 'Legacy response')}</small></td><td><small>Extroversion ${r.extroversion ?? '—'}/5 · Organization ${r.organization ?? '—'}/5 · Sound ${r.sound_level ?? '—'}/5</small><span>${escapeHtml(r.room_type || '—')} · ${escapeHtml(r.bedtime_preference || '—')} · ${r.preferred_suitemates ?? '—'} suitemates</span><small>${escapeHtml(r.floor_preference || '—')} floor · ${escapeHtml(r.college_preference || '—')}</small></td><td><span class="status-badge ${escapeHtml(r.matching_status)}">${escapeHtml(r.matching_status)}</span></td><td><div class="assignment-control"><select data-assign="${r.id}"><option value="">Unassigned</option>${suites.map(s => `<option value="${s.id}" ${r.suite_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select><button data-save-assignment="${r.id}">Save</button></div></td></tr>`).join('') : '<tr><td colspan="5" class="empty-state">No responses match this view.</td></tr>';
+      list.innerHTML = shown.length ? shown.map(r => `<tr><td><strong>${escapeHtml(r.preferred_name)}</strong><small>${escapeHtml(r.email)}</small><small>Submitted ${escapeHtml(formatSubmittedAt(r.submitted_at))}</small></td><td><strong>${escapeHtml(r.session)}</strong><small>${escapeHtml(r.track || 'Legacy response')}</small></td><td><small>Extroversion ${r.extroversion ?? '—'}/5 · Organization ${r.organization ?? '—'}/5 · Sound ${r.sound_level ?? '—'}/5</small><span>${escapeHtml(r.room_type || '—')} preference · ${escapeHtml(r.bedtime_preference || '—')} · ${r.preferred_suitemates ?? '—'} suitemates</span><small>${escapeHtml(r.floor_preference || '—')} floor · ${escapeHtml(r.college_preference || '—')}</small></td><td><span class="status-badge ${escapeHtml(r.matching_status)}">${escapeHtml(r.matching_status)}</span>${r.assigned_room_type ? `<small>${escapeHtml(r.assigned_room_type === 'single' ? 'Single room' : 'Double room')}</small>` : ''}</td><td><div class="assignment-control"><select data-assign="${r.id}"><option value="">Unassigned</option>${suites.map(s => `<option value="${s.id}" ${r.suite_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select><button data-save-assignment="${r.id}">Save</button></div></td></tr>`).join('') : '<tr><td colspan="5" class="empty-state">No responses match this view.</td></tr>';
     };
 
     const loadDashboard = async (user: User) => {
@@ -175,7 +175,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       root.querySelectorAll('[data-admin-email]').forEach(el => { el.textContent = user.email ?? ''; });
       const [suiteResult, responseResult, runResult] = await Promise.all([
         client.from('suites').select('id,name,session,floor,college,single_rooms,double_rooms,capacity,status,suite_members(count)').order('name'),
-        client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at', { ascending: true }),
+        client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,assigned_room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at', { ascending: true }),
         client.from('matching_runs').select('id,status,trigger_type,scheduled_for,started_at,created_at').order('created_at', { ascending: false }).limit(10)
       ]);
       if (suiteResult.error || responseResult.error || runResult.error) { message('Could not load matching data. Check the admin database policies.'); return; }
@@ -243,7 +243,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const { error } = await client.functions.invoke('run-matching'); button.disabled = false;
       if (error) { message(error.message); return; }
       message('Matching completed. Review the proposed suite assignments below.', 'success');
-      const { data: refreshedResponses } = await client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at'); responses = (refreshedResponses ?? []) as Response[];
+      const { data: refreshedResponses } = await client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,assigned_room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at'); responses = (refreshedResponses ?? []) as Response[];
       await refreshRuns();
     });
 
