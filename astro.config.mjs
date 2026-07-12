@@ -9,7 +9,7 @@ export default defineConfig({
     starlight({
       title: 'SuiteSync',
       description: 'Thoughtful suite matching for the YYGS residential experience.',
-      favicon: '/SuiteSync/favicon.svg',
+      favicon: '/yale.png',
       pagination: false,
       logo: {
         src: './src/assets/logo.svg',
