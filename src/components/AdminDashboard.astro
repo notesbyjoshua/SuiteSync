@@ -18,6 +18,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       <button class="button primary auth-button" type="submit">Sign in <span>→</span></button>
     </form>
     <div class="auth-message" data-admin-message role="status" hidden></div>
+    <div class="demo-login">
+      <span>Quick demo access</span>
+      <div><input type="password" data-demo-password placeholder="Demo password" /><button type="button" data-enter-demo>Enter demo</button></div>
+      <small>Demo mode uses sample data and does not access or change Supabase.</small>
+    </div>
   </section>
 
   <section data-admin-denied hidden class="access-denied">
@@ -25,6 +30,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
   </section>
 
   <div data-admin-dashboard hidden>
+    <div class="testing-banner admin-demo-banner" data-admin-demo-banner hidden><strong>Demo mode</strong><span>All data and actions on this screen are simulated.</span></div>
     <div class="admin-toolbar"><span>Signed in as <strong data-admin-email></strong></span><button data-admin-signout>Sign out</button></div>
     <section class="stat-grid">
       <article><span>Total responses</span><strong data-stat="total">—</strong></article>
@@ -95,6 +101,25 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     let suites: Suite[] = [];
     let responses: Response[] = [];
     let matchingRuns: MatchingRun[] = [];
+    let demoMode = false;
+
+    const loadDemoDashboard = () => {
+      demoMode = true;
+      suites = [
+        { id: 'demo-suite-1', name: 'Franklin 201', session: 'Session I', capacity: 6, status: 'draft', suite_members: [{ count: 2 }] },
+        { id: 'demo-suite-2', name: 'Murray 304', session: 'Session I', capacity: 4, status: 'draft', suite_members: [{ count: 1 }] }
+      ];
+      responses = [
+        { id: 'demo-response-1', preferred_name: 'Alex', email: 'alex@example.com', track: 'Innovations in Science & Technology', session: 'Session I', extroversion: 4, organization: 3, room_type: 'double', bedtime_preference: '22:30', preferred_suitemates: 5, floor_preference: 'higher', college_preference: 'benjamin_franklin', sound_level: 3, submitted_at: new Date(Date.now() - 7200000).toISOString(), matching_status: 'pending', suite_id: null },
+        { id: 'demo-response-2', preferred_name: 'Samira', email: 'samira@example.com', track: 'Politics, Law & Economics', session: 'Session I', extroversion: 3, organization: 5, room_type: 'single', bedtime_preference: '23:00', preferred_suitemates: 4, floor_preference: 'no_preference', college_preference: 'pauli_murray', sound_level: 2, submitted_at: new Date(Date.now() - 3600000).toISOString(), matching_status: 'matched', suite_id: 'demo-suite-2' },
+        { id: 'demo-response-3', preferred_name: 'Mateo', email: 'mateo@example.com', track: 'Solving Global Challenges', session: 'Session II', extroversion: 5, organization: 2, room_type: 'no_preference', bedtime_preference: '00:00_or_later', preferred_suitemates: 6, floor_preference: 'lower', college_preference: 'no_preference', sound_level: 4, submitted_at: new Date().toISOString(), matching_status: 'pending', suite_id: null }
+      ];
+      matchingRuns = [];
+      setScreen('dashboard');
+      root.querySelectorAll('[data-admin-email]').forEach(el => { el.textContent = 'demo@suitesync.local'; });
+      const banner = root.querySelector('[data-admin-demo-banner]'); if (banner instanceof HTMLElement) banner.hidden = false;
+      render();
+    };
 
     const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>'"]/g, character => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
@@ -168,17 +193,40 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       if (el instanceof HTMLElement) { el.textContent = error ? 'The email or password is incorrect, or this account has not been created yet.' : ''; el.dataset.kind = 'error'; el.hidden = !error; }
     });
 
-    root.querySelectorAll('[data-admin-signout]').forEach(button => button.addEventListener('click', () => client?.auth.signOut()));
+    root.querySelector('[data-enter-demo]')?.addEventListener('click', () => {
+      const input = root.querySelector('[data-demo-password]');
+      const notice = root.querySelector('[data-admin-message]');
+      if (!(input instanceof HTMLInputElement)) return;
+      if (input.value !== 'test123') {
+        if (notice instanceof HTMLElement) { notice.textContent = 'Incorrect demo password.'; notice.dataset.kind = 'error'; notice.hidden = false; }
+        return;
+      }
+      loadDemoDashboard();
+    });
+
+    root.querySelectorAll('[data-admin-signout]').forEach(button => button.addEventListener('click', () => {
+      if (demoMode) {
+        demoMode = false;
+        const banner = root.querySelector('[data-admin-demo-banner]'); if (banner instanceof HTMLElement) banner.hidden = true;
+        setScreen('auth');
+      } else void client?.auth.signOut();
+    }));
     root.querySelector('[data-response-filter]')?.addEventListener('change', renderResponses);
 
     const refreshRuns = async () => {
+      if (demoMode) { render(); return; }
       if (!client) return;
       const { data } = await client.from('matching_runs').select('id,status,trigger_type,scheduled_for,started_at,created_at').order('created_at', { ascending: false }).limit(10);
       matchingRuns = (data ?? []) as MatchingRun[]; render();
     };
 
     root.querySelector('[data-start-matching]')?.addEventListener('click', async (event) => {
-      if (!client || !(event.currentTarget instanceof HTMLButtonElement)) return;
+      if (!(event.currentTarget instanceof HTMLButtonElement)) return;
+      if (demoMode) {
+        matchingRuns.unshift({ id: crypto.randomUUID(), status: 'awaiting_implementation', trigger_type: 'manual', scheduled_for: null, started_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        message('Demo matching run created.', 'success'); render(); return;
+      }
+      if (!client) return;
       const button = event.currentTarget; button.disabled = true;
       const { error } = await client.rpc('admin_start_matching'); button.disabled = false;
       if (error) { message(error.message); return; }
@@ -186,18 +234,25 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     });
 
     root.querySelector('[data-schedule-matching]')?.addEventListener('submit', async (event) => {
-      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
+      event.preventDefault(); if (!(event.currentTarget instanceof HTMLFormElement)) return;
       const form = event.currentTarget; const data = new FormData(form); const localTime = String(data.get('scheduled_for') ?? '');
       const scheduledFor = new Date(localTime);
       if (Number.isNaN(scheduledFor.getTime()) || scheduledFor <= new Date()) { message('Choose a time in the future.'); return; }
+      if (demoMode) {
+        matchingRuns.unshift({ id: crypto.randomUUID(), status: 'scheduled', trigger_type: 'scheduled', scheduled_for: scheduledFor.toISOString(), started_at: null, created_at: new Date().toISOString() });
+        form.reset(); message('Demo matching run scheduled.', 'success'); render(); return;
+      }
+      if (!client) return;
       const { error } = await client.rpc('admin_schedule_matching', { requested_start: scheduledFor.toISOString() });
       if (error) { message(error.message); return; }
       form.reset(); message('Matching run scheduled.', 'success'); await refreshRuns();
     });
 
     root.querySelector('[data-create-account]')?.addEventListener('submit', async (event) => {
-      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
+      event.preventDefault(); if (!(event.currentTarget instanceof HTMLFormElement)) return;
       const form = event.currentTarget; if (!form.reportValidity()) return;
+      if (demoMode) { form.reset(); message('Demo applicant account created.', 'success'); return; }
+      if (!client) return;
       const data = new FormData(form);
       const { error } = await client.functions.invoke('admin-create-user', { body: { email: String(data.get('email') ?? '').trim().toLowerCase(), password: String(data.get('password') ?? '') } });
       if (error) { message('Could not create the account. It may already exist, or the password may not meet the project requirements.'); return; }
@@ -205,8 +260,13 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     });
 
     root.querySelector('[data-create-suite]')?.addEventListener('submit', async (event) => {
-      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
+      event.preventDefault(); if (!(event.currentTarget instanceof HTMLFormElement)) return;
       const form = event.currentTarget; const data = new FormData(form);
+      if (demoMode) {
+        suites.push({ id: crypto.randomUUID(), name: String(data.get('name')), session: String(data.get('session') ?? '') || null, capacity: Number(data.get('capacity')), status: 'draft', suite_members: [{ count: 0 }] });
+        form.reset(); message('Demo suite created.', 'success'); render(); return;
+      }
+      if (!client) return;
       const { error } = await client.rpc('admin_create_suite', { suite_name: String(data.get('name')), suite_capacity: Number(data.get('capacity')), suite_session: String(data.get('session') ?? '') });
       if (error) { message(error.message); return; }
       form.reset(); message('Suite created.', 'success');
@@ -214,9 +274,14 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     });
 
     root.querySelector('[data-response-list]')?.addEventListener('click', async (event) => {
-      const target = event.target; if (!client || !(target instanceof HTMLButtonElement) || !target.dataset.saveAssignment) return;
+      const target = event.target; if (!(target instanceof HTMLButtonElement) || !target.dataset.saveAssignment) return;
       const responseId = target.dataset.saveAssignment; const select = root.querySelector(`[data-assign="${responseId}"]`);
       if (!(select instanceof HTMLSelectElement)) return;
+      if (demoMode) {
+        const response = responses.find(r => r.id === responseId); if (response) { response.suite_id = select.value || null; response.matching_status = select.value ? 'matched' : 'pending'; }
+        message('Demo assignment saved.', 'success'); render(); return;
+      }
+      if (!client) return;
       target.disabled = true;
       const result = select.value ? await client.rpc('admin_assign_response', { target_response_id: responseId, target_suite_id: select.value }) : await client.rpc('admin_unassign_response', { target_response_id: responseId });
       target.disabled = false;

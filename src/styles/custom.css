@@ -164,6 +164,13 @@
 .auth-message[data-kind='success'] { background: color-mix(in srgb, #34d399 12%, transparent); border: 1px solid #059669; color: #a7f3d0; }
 .auth-message[data-kind='error'] { background: #450a0a; border: 1px solid #b91c1c; color: #fecaca; }
 .auth-card .privacy-note { border-top: 1px solid var(--sl-color-gray-5); font-size: 0.72rem; margin: 1.5rem 0 0; padding-top: 1.2rem; }
+.demo-login { border-top: 1px solid var(--sl-color-gray-5); margin-top: 1.5rem; padding-top: 1.25rem; text-align: left; }
+.demo-login > span { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.55rem; }
+.demo-login > div { display: flex; gap: 0.5rem; }
+.demo-login input { background: var(--sl-color-gray-6); border: 1px solid var(--sl-color-gray-4); border-radius: 0.55rem; color: var(--sl-color-white); min-width: 0; padding: 0.65rem 0.8rem; width: 100%; }
+.demo-login button { background: var(--sl-color-accent); border: 0; border-radius: 0.55rem; color: white; cursor: pointer; font-weight: 700; padding-inline: 0.9rem; white-space: nowrap; }
+.demo-login small { color: var(--sl-color-gray-3); display: block; font-size: 0.68rem; margin-top: 0.55rem; }
+.admin-demo-banner { margin: 0 0 1rem; }
 
 .signed-in-banner {
   align-items: center;
