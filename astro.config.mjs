@@ -10,6 +10,7 @@ export default defineConfig({
       title: 'SuiteSync',
       description: 'Thoughtful suite matching for the YYGS residential experience.',
       favicon: '/SuiteSync/favicon.svg',
+      pagination: false,
       logo: {
         src: './src/assets/logo.svg',
         replacesTitle: true,
