@@ -12,8 +12,8 @@ export default defineConfig({
       favicon: '/yale.png',
       pagination: false,
       logo: {
-        src: './src/assets/logo.svg',
-        replacesTitle: true,
+        src: './src/assets/yale.png',
+        replacesTitle: false,
       },
       plugins: [
         ion({
