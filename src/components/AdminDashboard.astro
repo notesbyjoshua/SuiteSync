@@ -73,6 +73,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       <form class="create-suite-form" data-create-suite>
         <label class="field"><span>Suite name</span><input name="name" required maxlength="80" placeholder="e.g. Davenport 201" /></label>
         <label class="field"><span>Session <small>(optional)</small></span><input name="session" maxlength="100" placeholder="e.g. IST" /></label>
+        <label class="field"><span>Floor</span><select name="floor" required><option value="">Select</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+        <label class="field"><span>Campus / college</span><select name="college" required><option value="">Select a college</option><option value="pauli_murray">Pauli Murray</option><option value="benjamin_franklin">Benjamin Franklin</option></select></label>
         <label class="field"><span>Capacity</span><select name="capacity"><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option></select></label>
         <button class="button primary" type="submit">Create suite</button>
       </form>
@@ -89,7 +91,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 <script>
   import { createClient, type User } from '@supabase/supabase-js';
-  type Suite = { id: string; name: string; session: string | null; capacity: number; status: string; suite_members: { count: number }[] };
+  type Suite = { id: string; name: string; session: string | null; floor: number | null; college: string | null; capacity: number; status: string; suite_members: { count: number }[] };
   type Response = { id: string; preferred_name: string; email: string; track: string | null; session: string; extroversion: number | null; organization: number | null; room_type: string | null; bedtime_preference: string | null; preferred_suitemates: number | null; floor_preference: string | null; college_preference: string | null; sound_level: number | null; submitted_at: string; matching_status: string; suite_id: string | null };
   type MatchingRun = { id: string; status: string; trigger_type: string; scheduled_for: string | null; started_at: string | null; created_at: string };
 
@@ -149,7 +151,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const stats = { total: responses.length, pending: responses.filter(r => r.matching_status === 'pending').length, matched: responses.filter(r => r.matching_status === 'matched').length, suites: suites.length };
       Object.entries(stats).forEach(([name, value]) => { const el = root.querySelector(`[data-stat="${name}"]`); if (el) el.textContent = String(value); });
       const suiteGrid = root.querySelector('[data-suite-grid]');
-      if (suiteGrid) suiteGrid.innerHTML = suites.length ? suites.map(s => `<article><span>${escapeHtml(s.session || 'All sessions')}</span><h3>${escapeHtml(s.name)}</h3><strong>${s.suite_members?.[0]?.count ?? 0} / ${s.capacity} members</strong><div><i style="width:${((s.suite_members?.[0]?.count ?? 0) / s.capacity) * 100}%"></i></div></article>`).join('') : '<p class="empty-state">No suites created yet.</p>';
+      if (suiteGrid) suiteGrid.innerHTML = suites.length ? suites.map(s => `<article><span>${escapeHtml(s.session || 'All sessions')}</span><h3>${escapeHtml(s.name)}</h3><small>${escapeHtml(s.college === 'pauli_murray' ? 'Pauli Murray' : s.college === 'benjamin_franklin' ? 'Benjamin Franklin' : 'College not set')} · ${s.floor ? `Floor ${s.floor}` : 'Floor not set'}</small><strong>${s.suite_members?.[0]?.count ?? 0} / ${s.capacity} members</strong><div><i style="width:${((s.suite_members?.[0]?.count ?? 0) / s.capacity) * 100}%"></i></div></article>`).join('') : '<p class="empty-state">No suites created yet.</p>';
       renderResponses();
       const history = root.querySelector('[data-run-history]');
       if (history) history.innerHTML = matchingRuns.length ? `<h3>Recent runs</h3>${matchingRuns.map(run => `<div><span class="status-badge ${escapeHtml(run.status)}">${escapeHtml(run.status.replaceAll('_', ' '))}</span><strong>${escapeHtml(run.trigger_type === 'manual' ? 'Manual run' : 'Scheduled run')}</strong><small>${escapeHtml(formatSubmittedAt(run.scheduled_for || run.started_at || run.created_at))}</small></div>`).join('')}` : '<p class="empty-state">No matching runs have been created yet.</p>';
@@ -171,7 +173,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       setScreen('dashboard');
       root.querySelectorAll('[data-admin-email]').forEach(el => { el.textContent = user.email ?? ''; });
       const [suiteResult, responseResult, runResult] = await Promise.all([
-        client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'),
+        client.from('suites').select('id,name,session,floor,college,capacity,status,suite_members(count)').order('name'),
         client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at', { ascending: true }),
         client.from('matching_runs').select('id,status,trigger_type,scheduled_for,started_at,created_at').order('created_at', { ascending: false }).limit(10)
       ]);
@@ -271,13 +273,13 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       event.preventDefault(); if (!(event.currentTarget instanceof HTMLFormElement)) return;
       const form = event.currentTarget; const data = new FormData(form);
       if (demoMode) {
-        try { await callDemoAdmin('create_suite', { name: String(data.get('name')), session: String(data.get('session') ?? ''), capacity: Number(data.get('capacity')) }); form.reset(); message('Suite created.', 'success'); await refreshDemoDashboard(); } catch (error) { message(error instanceof Error ? error.message : 'Request failed'); } return;
+        try { await callDemoAdmin('create_suite', { name: String(data.get('name')), session: String(data.get('session') ?? ''), floor: Number(data.get('floor')), college: String(data.get('college') ?? ''), capacity: Number(data.get('capacity')) }); form.reset(); message('Suite created.', 'success'); await refreshDemoDashboard(); } catch (error) { message(error instanceof Error ? error.message : 'Request failed'); } return;
       }
       if (!client) return;
-      const { error } = await client.rpc('admin_create_suite', { suite_name: String(data.get('name')), suite_capacity: Number(data.get('capacity')), suite_session: String(data.get('session') ?? '') });
+      const { error } = await client.rpc('admin_create_suite_with_location', { suite_name: String(data.get('name')), suite_capacity: Number(data.get('capacity')), suite_session: String(data.get('session') ?? ''), suite_floor: Number(data.get('floor')), suite_college: String(data.get('college') ?? '') });
       if (error) { message(error.message); return; }
       form.reset(); message('Suite created.', 'success');
-      const { data: refreshed } = await client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'); suites = (refreshed ?? []) as Suite[]; render();
+      const { data: refreshed } = await client.from('suites').select('id,name,session,floor,college,capacity,status,suite_members(count)').order('name'); suites = (refreshed ?? []) as Suite[]; render();
     });
 
     root.querySelector('[data-response-list]')?.addEventListener('click', async (event) => {
@@ -293,7 +295,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       target.disabled = false;
       if (result.error) { message(result.error.message); return; }
       const response = responses.find(r => r.id === responseId); if (response) { response.suite_id = select.value || null; response.matching_status = select.value ? 'matched' : 'pending'; }
-      const { data: refreshed } = await client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'); suites = (refreshed ?? []) as Suite[]; message('Assignment saved.', 'success'); render();
+      const { data: refreshed } = await client.from('suites').select('id,name,session,floor,college,capacity,status,suite_members(count)').order('name'); suites = (refreshed ?? []) as Suite[]; message('Assignment saved.', 'success'); render();
     });
   }
 </script>

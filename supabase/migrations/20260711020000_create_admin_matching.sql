@@ -33,6 +33,8 @@ create table if not exists public.suites (
   id uuid primary key default gen_random_uuid(),
   name text not null unique check (char_length(name) between 1 and 80),
   session text,
+  floor smallint check (floor between 1 and 4),
+  college text check (college in ('pauli_murray', 'benjamin_franklin')),
   capacity smallint not null default 6 check (capacity between 4 and 6),
   status text not null default 'draft' check (status in ('draft', 'ready', 'released')),
   created_by uuid not null references auth.users(id),
