@@ -11,7 +11,7 @@ create table if not exists public.survey_responses (
   biological_sex text not null check (biological_sex in ('male', 'female', 'non_binary', 'other')),
   pronouns text not null check (pronouns in ('he/him', 'he/they', 'she/her', 'she/they', 'they/them', 'other', 'prefer_not_to_say')),
   gender_identity text not null check (gender_identity in ('male', 'female', 'other', 'prefer_not_to_say')),
-  ethnicity text not null check (ethnicity in ('white', 'black', 'east_asian', 'south_asian', 'southeast_asian', 'middle_eastern_north_african', 'hispanic_latino', 'indigenous', 'pacific_islander', 'multiracial', 'other', 'prefer_not_to_say')),
+  ethnicity text not null check (ethnicity in ('white', 'black', 'east_asian', 'central_asian', 'south_asian', 'southeast_asian', 'middle_eastern_north_african', 'hispanic_latino', 'indigenous', 'pacific_islander', 'multiracial', 'other', 'prefer_not_to_say')),
   religious_belief text check (religious_belief is null or religious_belief in ('christian', 'muslim', 'hindu', 'sikh', 'jewish', 'buddhist', 'atheist', 'non_denomination', 'agnostic', 'other', 'prefer_not_to_say')),
   extroversion smallint not null check (extroversion between 1 and 5),
   organization smallint not null check (organization between 1 and 5),
