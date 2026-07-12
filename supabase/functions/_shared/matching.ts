@@ -67,11 +67,36 @@ export async function executeMatching(client: any, actorId: string, triggerType:
     if (suites.reduce((sum, suite) => sum + suite.capacity, 0) < students.length) throw new Error('Not enough suite capacity for all eligible applicants');
 
     const grouped = new Map<string, Student[]>();
-    for (const student of students) {
+    const reserved = new Set<string>();
+
+    // A request for zero suitemates is explicit: reserve a one-person suite with a single room.
+    const soloStudents = students
+      .filter(student => student.preferred_suitemates === 0)
+      .sort((a, b) => a.submitted_at.localeCompare(b.submitted_at) || a.id.localeCompare(b.id));
+    for (const student of soloStudents) {
+      const candidates = suites.filter(suite =>
+        !reserved.has(suite.id) &&
+        (!suite.session || suite.session === student.session) &&
+        (suite.single_rooms ?? 0) >= 1
+      );
+      candidates.sort((a, b) =>
+        Number(b.capacity === 1) - Number(a.capacity === 1) ||
+        locationScore(student, b) - locationScore(student, a) ||
+        a.capacity - b.capacity ||
+        a.id.localeCompare(b.id)
+      );
+      const suite = candidates[0];
+      if (!suite) throw new Error(`No single-person suite is available for ${student.session} applicant requesting zero suitemates`);
+      reserved.add(suite.id);
+      suite.housingGroup = housingGroup(student);
+      suite.targetSize = 1;
+      suite.members.push(student);
+    }
+
+    for (const student of students.filter(student => student.preferred_suitemates !== 0)) {
       const key = `${student.session}::${housingGroup(student)}`;
       grouped.set(key, [...(grouped.get(key) ?? []), student]);
     }
-    const reserved = new Set<string>();
     const groups = [...grouped.entries()].sort(([, a], [, b]) => b.length - a.length);
     for (const [, groupStudents] of groups) {
       const sample = groupStudents[0];
@@ -91,7 +116,18 @@ export async function executeMatching(client: any, actorId: string, triggerType:
       if (!selected) throw new Error(`Not enough compatible suite inventory for ${sample.session} ${housingGroup(sample)}`);
       selected.forEach(suite => { reserved.add(suite.id); suite.housingGroup = housingGroup(sample); suite.targetSize = 1; });
       let remaining = groupStudents.length - selected.length;
-      for (const suite of selected) while (remaining > 0 && (suite.targetSize ?? 1) < suite.capacity && (suite.targetSize ?? 1) < 9) { suite.targetSize = (suite.targetSize ?? 1) + 1; remaining--; }
+      while (remaining > 0) {
+        let distributed = false;
+        for (const suite of selected) {
+          if (remaining === 0) break;
+          if ((suite.targetSize ?? 1) < suite.capacity && (suite.targetSize ?? 1) < 9) {
+            suite.targetSize = (suite.targetSize ?? 1) + 1;
+            remaining--;
+            distributed = true;
+          }
+        }
+        if (!distributed) break;
+      }
       if (remaining) throw new Error(`Suite capacities cannot fit ${sample.session} ${housingGroup(sample)} applicants`);
 
       const ordered = [...groupStudents].sort((a, b) => optionCount(a, selected!) - optionCount(b, selected!) || a.id.localeCompare(b.id));
@@ -111,7 +147,7 @@ export async function executeMatching(client: any, actorId: string, triggerType:
         const left = suites[i], right = suites[j];
         if (left.housingGroup !== right.housingGroup || (left.session && right.session && left.session !== right.session)) continue;
         for (const a of [...left.members]) for (const b of [...right.members]) {
-          if (a.session !== b.session || housingGroup(a) !== housingGroup(b)) continue;
+          if (a.session !== b.session || housingGroup(a) !== housingGroup(b) || a.preferred_suitemates === 0 || b.preferred_suitemates === 0 || left.targetSize === 1 || right.targetSize === 1) continue;
           const beforeA = placementScore(a, left, a.id), beforeB = placementScore(b, right, b.id);
           const afterA = placementScore(a, right, b.id), afterB = placementScore(b, left, a.id);
           const totalGain = afterA + afterB - beforeA - beforeB;
