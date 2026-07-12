@@ -33,6 +33,25 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       <article><span>Draft suites</span><strong data-stat="suites">—</strong></article>
     </section>
 
+    <section class="admin-panel matching-controls">
+      <div class="panel-heading"><div><span class="step-label">MATCHING ALGORITHM</span><h2>Start or schedule matching</h2></div></div>
+      <p class="admin-helper">These controls create an auditable matching run. Until the matching algorithm is implemented, runs remain marked as awaiting implementation and do not change suite assignments.</p>
+      <div class="matching-action-grid">
+        <article>
+          <h3>Run manually</h3>
+          <p>Start a matching run immediately using the responses available now.</p>
+          <button class="button primary" type="button" data-start-matching>Start matching now</button>
+        </article>
+        <form data-schedule-matching>
+          <h3>Schedule a run</h3>
+          <p>Choose the date and time when matching should become ready to run.</p>
+          <label class="field"><span>Start date and time</span><input type="datetime-local" name="scheduled_for" required /></label>
+          <button class="button secondary" type="submit">Schedule matching</button>
+        </form>
+      </div>
+      <div class="run-history" data-run-history></div>
+    </section>
+
     <section class="admin-panel">
       <div class="panel-heading"><div><span class="step-label">ACCOUNTS</span><h2>Create applicant accounts</h2></div></div>
       <form class="create-suite-form create-account-form" data-create-account>
@@ -66,6 +85,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
   import { createClient, type User } from '@supabase/supabase-js';
   type Suite = { id: string; name: string; session: string | null; capacity: number; status: string; suite_members: { count: number }[] };
   type Response = { id: string; preferred_name: string; email: string; track: string | null; session: string; extroversion: number | null; organization: number | null; room_type: string | null; bedtime_preference: string | null; preferred_suitemates: number | null; floor_preference: string | null; college_preference: string | null; sound_level: number | null; submitted_at: string; matching_status: string; suite_id: string | null };
+  type MatchingRun = { id: string; status: string; trigger_type: string; scheduled_for: string | null; started_at: string | null; created_at: string };
 
   const root = document.querySelector('[data-admin-root]');
   if (root instanceof HTMLElement) {
@@ -74,6 +94,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     const client = url && key ? createClient(url, key) : null;
     let suites: Suite[] = [];
     let responses: Response[] = [];
+    let matchingRuns: MatchingRun[] = [];
 
     const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>'"]/g, character => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
@@ -98,6 +119,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const suiteGrid = root.querySelector('[data-suite-grid]');
       if (suiteGrid) suiteGrid.innerHTML = suites.length ? suites.map(s => `<article><span>${escapeHtml(s.session || 'All sessions')}</span><h3>${escapeHtml(s.name)}</h3><strong>${s.suite_members?.[0]?.count ?? 0} / ${s.capacity} members</strong><div><i style="width:${((s.suite_members?.[0]?.count ?? 0) / s.capacity) * 100}%"></i></div></article>`).join('') : '<p class="empty-state">No suites created yet.</p>';
       renderResponses();
+      const history = root.querySelector('[data-run-history]');
+      if (history) history.innerHTML = matchingRuns.length ? `<h3>Recent runs</h3>${matchingRuns.map(run => `<div><span class="status-badge ${escapeHtml(run.status)}">${escapeHtml(run.status.replaceAll('_', ' '))}</span><strong>${escapeHtml(run.trigger_type === 'manual' ? 'Manual run' : 'Scheduled run')}</strong><small>${escapeHtml(formatSubmittedAt(run.scheduled_for || run.started_at || run.created_at))}</small></div>`).join('')}` : '<p class="empty-state">No matching runs have been created yet.</p>';
     };
 
     const renderResponses = () => {
@@ -115,13 +138,15 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       if (!allowed) { setScreen('denied'); return; }
       setScreen('dashboard');
       root.querySelectorAll('[data-admin-email]').forEach(el => { el.textContent = user.email ?? ''; });
-      const [suiteResult, responseResult] = await Promise.all([
+      const [suiteResult, responseResult, runResult] = await Promise.all([
         client.from('suites').select('id,name,session,capacity,status,suite_members(count)').order('name'),
-        client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at', { ascending: true })
+        client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at', { ascending: true }),
+        client.from('matching_runs').select('id,status,trigger_type,scheduled_for,started_at,created_at').order('created_at', { ascending: false }).limit(10)
       ]);
-      if (suiteResult.error || responseResult.error) { message('Could not load matching data. Check the admin database policies.'); return; }
+      if (suiteResult.error || responseResult.error || runResult.error) { message('Could not load matching data. Check the admin database policies.'); return; }
       suites = (suiteResult.data ?? []) as Suite[];
       responses = (responseResult.data ?? []) as Response[];
+      matchingRuns = (runResult.data ?? []) as MatchingRun[];
       render();
     };
 
@@ -145,6 +170,30 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     root.querySelectorAll('[data-admin-signout]').forEach(button => button.addEventListener('click', () => client?.auth.signOut()));
     root.querySelector('[data-response-filter]')?.addEventListener('change', renderResponses);
+
+    const refreshRuns = async () => {
+      if (!client) return;
+      const { data } = await client.from('matching_runs').select('id,status,trigger_type,scheduled_for,started_at,created_at').order('created_at', { ascending: false }).limit(10);
+      matchingRuns = (data ?? []) as MatchingRun[]; render();
+    };
+
+    root.querySelector('[data-start-matching]')?.addEventListener('click', async (event) => {
+      if (!client || !(event.currentTarget instanceof HTMLButtonElement)) return;
+      const button = event.currentTarget; button.disabled = true;
+      const { error } = await client.rpc('admin_start_matching'); button.disabled = false;
+      if (error) { message(error.message); return; }
+      message('Matching run created. The algorithm worker is not implemented yet.', 'success'); await refreshRuns();
+    });
+
+    root.querySelector('[data-schedule-matching]')?.addEventListener('submit', async (event) => {
+      event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;
+      const form = event.currentTarget; const data = new FormData(form); const localTime = String(data.get('scheduled_for') ?? '');
+      const scheduledFor = new Date(localTime);
+      if (Number.isNaN(scheduledFor.getTime()) || scheduledFor <= new Date()) { message('Choose a time in the future.'); return; }
+      const { error } = await client.rpc('admin_schedule_matching', { requested_start: scheduledFor.toISOString() });
+      if (error) { message(error.message); return; }
+      form.reset(); message('Matching run scheduled.', 'success'); await refreshRuns();
+    });
 
     root.querySelector('[data-create-account]')?.addEventListener('submit', async (event) => {
       event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return;

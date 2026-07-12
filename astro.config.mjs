@@ -15,6 +15,9 @@ export default defineConfig({
         src: './src/assets/yale.png',
         replacesTitle: false,
       },
+      components: {
+        SocialIcons: './src/components/AdminHeaderLink.astro',
+      },
       plugins: [
         ion({
           footer: {
