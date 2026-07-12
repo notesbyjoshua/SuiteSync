@@ -1,11 +1,11 @@
 type Student = {
-  id: string; session: string; age: number; gender_identity: string; submitted_at: string;
+  id: string; email: string; session: string; age: number; gender_identity: string; submitted_at: string;
   extroversion: number | null; organization: number | null; sound_level: number | null;
   bedtime_preference: string | null; preferred_suitemates: number | null;
   room_type: string | null; floor_preference: string | null; college_preference: string | null;
 };
 type Suite = {
-  id: string; session: string | null; capacity: number; floor: number | null; college: string | null;
+  id: string; name: string; session: string | null; capacity: number; floor: number | null; college: string | null;
   single_rooms: number | null; double_rooms: number | null; members: Student[]; housingGroup: string | null; targetSize?: number;
 };
 
@@ -57,8 +57,8 @@ export async function executeMatching(client: any, actorId: string, triggerType:
   if (runError) throw runError;
   try {
     const [studentResult, suiteResult] = await Promise.all([
-      client.from('survey_responses').select('id,session,age,gender_identity,extroversion,organization,sound_level,bedtime_preference,preferred_suitemates,room_type,floor_preference,college_preference,submitted_at').neq('matching_status', 'excluded'),
-      client.from('suites').select('id,session,capacity,floor,college,single_rooms,double_rooms').order('created_at'),
+      client.from('survey_responses').select('id,email,session,age,gender_identity,extroversion,organization,sound_level,bedtime_preference,preferred_suitemates,room_type,floor_preference,college_preference,submitted_at').neq('matching_status', 'excluded'),
+      client.from('suites').select('id,name,session,capacity,floor,college,single_rooms,double_rooms').order('created_at'),
     ]);
     if (studentResult.error || suiteResult.error) throw studentResult.error || suiteResult.error;
     const students = (studentResult.data ?? []) as Student[];
@@ -68,10 +68,27 @@ export async function executeMatching(client: any, actorId: string, triggerType:
 
     const grouped = new Map<string, Student[]>();
     const reserved = new Set<string>();
+    const protectedIds = new Set<string>();
+
+    // Keep the named demo roommates together in the suite shown on the My Suite page.
+    const franklin201 = suites.find(suite => suite.name === 'Franklin 201');
+    const protectedEmails = ['joshuabie2010@gmail.com', 'alex@example.com', 'samira@example.com', 'mateo@example.com'];
+    const protectedStudents = students.filter(student => protectedEmails.includes(student.email.toLowerCase()));
+    if (protectedStudents.length) {
+      if (!franklin201) throw new Error('Franklin 201 is required for the demo suitemates');
+      if (protectedStudents.length !== protectedEmails.length) throw new Error('Joshua, Alex, Samuel, and Mateo must all have eligible survey responses');
+      if (protectedStudents.some(student => student.session !== protectedStudents[0].session)) throw new Error('The Franklin 201 demo suitemates must be in the same session');
+      if (protectedStudents.length > franklin201.capacity || (franklin201.double_rooms ?? 0) * 2 < protectedStudents.length) throw new Error('Franklin 201 does not have enough double rooms for the demo suitemates');
+      reserved.add(franklin201.id);
+      franklin201.housingGroup = 'male';
+      franklin201.targetSize = protectedStudents.length;
+      franklin201.members.push(...protectedStudents);
+      protectedStudents.forEach(student => protectedIds.add(student.id));
+    }
 
     // A request for zero suitemates is explicit: reserve a one-person suite with a single room.
     const soloStudents = students
-      .filter(student => student.preferred_suitemates === 0)
+      .filter(student => student.preferred_suitemates === 0 && !protectedIds.has(student.id))
       .sort((a, b) => a.submitted_at.localeCompare(b.submitted_at) || a.id.localeCompare(b.id));
     for (const student of soloStudents) {
       const candidates = suites.filter(suite =>
@@ -93,7 +110,7 @@ export async function executeMatching(client: any, actorId: string, triggerType:
       suite.members.push(student);
     }
 
-    for (const student of students.filter(student => student.preferred_suitemates !== 0)) {
+    for (const student of students.filter(student => student.preferred_suitemates !== 0 && !protectedIds.has(student.id))) {
       const key = `${student.session}::${housingGroup(student)}`;
       grouped.set(key, [...(grouped.get(key) ?? []), student]);
     }
@@ -147,7 +164,7 @@ export async function executeMatching(client: any, actorId: string, triggerType:
         const left = suites[i], right = suites[j];
         if (left.housingGroup !== right.housingGroup || (left.session && right.session && left.session !== right.session)) continue;
         for (const a of [...left.members]) for (const b of [...right.members]) {
-          if (a.session !== b.session || housingGroup(a) !== housingGroup(b) || a.preferred_suitemates === 0 || b.preferred_suitemates === 0 || left.targetSize === 1 || right.targetSize === 1) continue;
+          if (a.session !== b.session || housingGroup(a) !== housingGroup(b) || protectedIds.has(a.id) || protectedIds.has(b.id) || a.preferred_suitemates === 0 || b.preferred_suitemates === 0 || left.targetSize === 1 || right.targetSize === 1) continue;
           const beforeA = placementScore(a, left, a.id), beforeB = placementScore(b, right, b.id);
           const afterA = placementScore(a, right, b.id), afterB = placementScore(b, left, a.id);
           const totalGain = afterA + afterB - beforeA - beforeB;
@@ -163,9 +180,9 @@ export async function executeMatching(client: any, actorId: string, triggerType:
     const assignments = suites.flatMap(suite => {
       const minimumSingles = Math.max(0, suite.members.length - (suite.double_rooms ?? 0) * 2);
       const availableSingles = Math.min(suite.single_rooms ?? 0, suite.members.length);
-      const singleCount = Math.max(minimumSingles, Math.min(availableSingles, suite.members.filter(student => student.room_type === 'single').length));
+      const singleCount = Math.max(minimumSingles, Math.min(availableSingles, suite.members.filter(student => student.room_type === 'single' && !protectedIds.has(student.id)).length));
       const roomOrder = [...suite.members].sort((a, b) => {
-        const rank = (student: Student) => student.room_type === 'single' ? 0 : student.room_type === 'no_preference' ? 1 : 2;
+        const rank = (student: Student) => protectedIds.has(student.id) ? 3 : student.room_type === 'single' ? 0 : student.room_type === 'no_preference' ? 1 : 2;
         return rank(a) - rank(b) || a.submitted_at.localeCompare(b.submitted_at) || a.id.localeCompare(b.id);
       });
       const singleIds = new Set(roomOrder.slice(0, singleCount).map(student => student.id));
