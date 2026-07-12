@@ -24,7 +24,7 @@ Deno.serve(async (request) => {
     if (body.action === 'load') {
       const [suites, responses, runs] = await Promise.all([
         client.from('suites').select('id,name,session,floor,college,single_rooms,double_rooms,capacity,status,suite_members(count)').order('name'),
-        client.from('survey_responses').select('id,preferred_name,email,track,session,extroversion,organization,room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at'),
+        client.from('survey_responses').select('id,preferred_name,email,track,session,gender_identity,extroversion,organization,room_type,assigned_room_type,bedtime_preference,preferred_suitemates,floor_preference,college_preference,sound_level,submitted_at,matching_status,suite_id').order('submitted_at'),
         client.from('matching_runs').select('id,status,trigger_type,scheduled_for,started_at,created_at').order('created_at', { ascending: false }).limit(10),
       ]);
       if (suites.error || responses.error || runs.error) throw suites.error || responses.error || runs.error;

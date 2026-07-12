@@ -59,9 +59,9 @@ begin
     ) counts join public.suites s on s.id = counts.suite_id where counts.assigned > s.capacity
   ) then raise exception 'Assignment exceeds suite capacity'; end if;
 
-  delete from public.suite_members;
+  delete from public.suite_members where true;
   update public.survey_responses set suite_id = null, matching_status = 'pending', matching_score = null, assigned_room_type = null where matching_status <> 'excluded';
-  update public.suites set housing_group = null;
+  update public.suites set housing_group = null where true;
 
   for assignment_item in select elem from jsonb_array_elements(assignment_data) as elements(elem) loop
     insert into public.suite_members (suite_id, response_id, assigned_by)

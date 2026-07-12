@@ -12,13 +12,17 @@ begin
   ) then raise exception 'Assignment exceeds suite capacity'; end if;
 
   delete from public.suite_members where true;
-  update public.survey_responses set suite_id = null, matching_status = 'pending', matching_score = null where matching_status <> 'excluded';
+  update public.survey_responses set suite_id = null, matching_status = 'pending', matching_score = null, assigned_room_type = null where matching_status <> 'excluded';
   update public.suites set housing_group = null where true;
 
   for assignment_item in select elem from jsonb_array_elements(assignment_data) as elements(elem) loop
     insert into public.suite_members (suite_id, response_id, assigned_by)
     values ((assignment_item->>'suite_id')::uuid, (assignment_item->>'response_id')::uuid, actor_user_id);
-    update public.survey_responses set suite_id = (assignment_item->>'suite_id')::uuid, matching_status = 'matched', matching_score = (assignment_item->>'score')::numeric
+    update public.survey_responses set
+      suite_id = (assignment_item->>'suite_id')::uuid,
+      matching_status = 'matched',
+      matching_score = (assignment_item->>'score')::numeric,
+      assigned_room_type = assignment_item->>'assigned_room_type'
     where id = (assignment_item->>'response_id')::uuid;
     update public.suites set housing_group = assignment_item->>'housing_group' where id = (assignment_item->>'suite_id')::uuid;
   end loop;
