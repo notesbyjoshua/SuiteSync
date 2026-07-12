@@ -1,4 +1,8 @@
-<a class="admin-header-link" href={`${import.meta.env.BASE_URL}admin/`}>Admin</a>
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<a class="admin-header-link" href={`${base}/admin/`}>Admin</a>
 
 <style>
   .admin-header-link {
