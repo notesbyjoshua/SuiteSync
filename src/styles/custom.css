@@ -441,7 +441,7 @@
 .choice-grid { display: grid; gap: 0.7rem; grid-template-columns: repeat(3, 10rem); justify-content: start; width: 100%; }
 .compact-options .choice-grid { grid-template-columns: repeat(4, 9.5rem); }
 .compact-options .choice-grid.three-options { grid-template-columns: repeat(3, 11rem); }
-.choice-chip { display: flex; min-width: 0; }
+.choice-chip { display: flex; margin: 0 !important; min-width: 0; }
 .choice-chip input { height: 1px; opacity: 0; position: absolute; width: 1px; }
 .choice-chip span { align-items: center; border: 1px solid var(--sl-color-gray-4); border-radius: 10rem; box-sizing: border-box; cursor: pointer; display: flex; font-size: 0.82rem; height: 3rem; justify-content: center; line-height: 1.15; overflow: hidden; padding: 0.4rem 0.75rem; text-align: center; width: 100%; }
 .choice-chip input:checked + span { background: var(--sl-color-accent); border-color: var(--sl-color-accent); color: white; }
