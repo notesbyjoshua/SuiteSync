@@ -22,7 +22,7 @@ begin
     college_preference, sound_level, consented_at, survey_version, matching_status
   ) values
     (joshua_id, 'Joshua', 'joshuabie2010@gmail.com', 'Innovations in Science & Technology', 'Session II', 16, 'male', 'he/him', 'other', 'central_asian', null, 4, 4, 'double', '22:30', 3, 'lower', 'benjamin_franklin', 3, now(), 1, 'pending'),
-    (samira_id, 'Samira', 'samira@example.com', 'Politics, Law & Economics', 'Session II', 16, 'female', 'she/her', 'other', 'south_asian', 'muslim', 4, 4, 'double', '22:30', 3, 'lower', 'benjamin_franklin', 3, now(), 1, 'pending'),
+    (samira_id, 'Samuel', 'samira@example.com', 'Politics, Law & Economics', 'Session II', 16, 'male', 'he/him', 'male', 'south_asian', 'muslim', 4, 4, 'double', '22:30', 3, 'lower', 'benjamin_franklin', 3, now(), 1, 'pending'),
     (alex_id, 'Alex', 'alex@example.com', 'Solving Global Challenges', 'Session II', 17, 'male', 'he/they', 'other', 'east_asian', null, 4, 3, 'double', '23:00', 3, 'lower', 'benjamin_franklin', 3, now(), 1, 'pending'),
     (mateo_id, 'Mateo', 'mateo@example.com', 'Innovations in Science & Technology', 'Session II', 17, 'male', 'he/him', 'other', 'hispanic_latino', 'christian', 3, 4, 'double', '22:30', 3, 'no_preference', 'benjamin_franklin', 3, now(), 1, 'pending')
   on conflict (email) do update set

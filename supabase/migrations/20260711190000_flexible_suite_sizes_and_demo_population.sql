@@ -31,7 +31,7 @@ on conflict (email) do update set session='Session II', suite_id=null, matching_
 
 -- Use distinct housing groups for the four named demo accounts.
 update public.survey_responses set gender_identity='male' where lower(email) in ('joshuabie2010@gmail.com','alex@example.com');
-update public.survey_responses set gender_identity='female' where lower(email)='samira@example.com';
+update public.survey_responses set preferred_name='Samuel', biological_sex='male', pronouns='he/him', gender_identity='male' where lower(email)='samira@example.com';
 update public.survey_responses set gender_identity='other' where lower(email)='mateo@example.com';
 
 -- Provide at least one available Session II suite for each housing group.

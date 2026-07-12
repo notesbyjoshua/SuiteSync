@@ -9,7 +9,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
   <div class="testing-banner chat-demo-banner"><strong>Demo suite</strong><span>This sample chat resets when the page refreshes.</span></div>
 
   <div class="chat-layout" data-chat-layout hidden>
-    <aside class="member-panel"><span class="step-label">YOUR SUITE</span><h2 data-suite-name></h2><p data-suite-location></p><p class="room-assignment">Your room: <strong data-room-assignment>Double room</strong></p><h3>Suitemates</h3><ul data-member-list></ul></aside>
+    <aside class="member-panel"><span class="step-label">YOUR SUITE</span><h2 data-suite-name></h2><p data-suite-location></p><p class="room-assignment">Your room: <strong data-room-assignment>Double room · Roommate: Alex</strong></p><h3>Suitemates</h3><ul data-member-list></ul></aside>
     <section class="message-panel">
       <div class="message-heading"><div><span class="status-dot"></span><strong>Suite chat</strong></div><small>Only your suitemates can see these messages.</small></div>
       <div class="message-list" data-message-list aria-live="polite"></div>
@@ -43,11 +43,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     const loadDemoChat = () => {
       currentUserId = 'demo-you';
       context = { suite: { id: 'demo-suite', name: 'Franklin 201', floor: 2, college: 'benjamin_franklin' }, members: [
-        { user_id: 'demo-you', preferred_name: 'You' }, { user_id: 'demo-alex', preferred_name: 'Alex' }, { user_id: 'demo-samira', preferred_name: 'Samira' }, { user_id: 'demo-mateo', preferred_name: 'Mateo' }
+        { user_id: 'demo-you', preferred_name: 'You' }, { user_id: 'demo-alex', preferred_name: 'Alex' }, { user_id: 'demo-samuel', preferred_name: 'Samuel' }, { user_id: 'demo-mateo', preferred_name: 'Mateo' }
       ] };
       demoMessages = [
         { id: 'demo-1', sender_user_id: 'demo-alex', body: 'Hi everyone! I’m excited to meet you for Session II 👋', created_at: new Date(Date.now() - 600000).toISOString() },
-        { id: 'demo-2', sender_user_id: 'demo-samira', body: 'Same here! I can’t wait to meet everyone at Benjamin Franklin.', created_at: new Date(Date.now() - 300000).toISOString() }
+        { id: 'demo-2', sender_user_id: 'demo-samuel', body: 'Same here! I can’t wait to meet everyone at Benjamin Franklin.', created_at: new Date(Date.now() - 300000).toISOString() }
       ];
       show('chat');
       const name = root.querySelector('[data-suite-name]'); if (name) name.textContent = context.suite.name;
