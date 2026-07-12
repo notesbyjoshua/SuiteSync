@@ -17,22 +17,23 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     <aside class="survey-progress" aria-label="Survey progress">
       <div class="progress-heading">
         <span>YOUR PROGRESS</span>
-        <strong data-progress-label>1 of 5</strong>
+        <strong data-progress-label>1 of 6</strong>
       </div>
       <div class="progress-track" aria-hidden="true"><span data-progress-bar></span></div>
       <ol>
         <li class="is-active" data-progress-step="0"><span>1</span>Welcome</li>
         <li data-progress-step="1"><span>2</span>About you</li>
-        <li data-progress-step="2"><span>3</span>Daily rhythms</li>
-        <li data-progress-step="3"><span>4</span>Suite community</li>
-        <li data-progress-step="4"><span>5</span>Review</li>
+        <li data-progress-step="2"><span>3</span>Personality</li>
+        <li data-progress-step="3"><span>4</span>Room preferences</li>
+        <li data-progress-step="4"><span>5</span>Location</li>
+        <li data-progress-step="5"><span>6</span>Review</li>
       </ol>
       <p>Your responses are private and are used only for suite matching and residential planning.</p>
     </aside>
 
     <form class="survey-card" data-survey-form novalidate>
       <section class="survey-section is-active" data-section="0">
-        <span class="step-label">STEP 1 OF 5</span>
+        <span class="step-label">STEP 1 OF 6</span>
         <h2>Welcome to YYGS!</h2>
         <div class="welcome-copy">
           <p>YYGS Residential offers a rare opportunity for like-minded students from around the world to meet at Yale’s historic campus. Students spend two weeks living in college dormitories, eating at Yale dining halls, and learning in an environment that encourages student collaboration and diverse, global perspectives.</p>
@@ -69,7 +70,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       </section>
 
       <section class="survey-section" data-section="1" hidden>
-        <span class="step-label">STEP 2 OF 5</span>
+        <span class="step-label">STEP 2 OF 6</span>
         <h2>First, tell us who you are.</h2>
         <p class="section-copy">We’ll use these details to connect this response to your YYGS application.</p>
         <div class="field-grid personal-grid">
@@ -122,43 +123,31 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       </section>
 
       <section class="survey-section" data-section="2" hidden>
-        <span class="step-label">STEP 3 OF 5</span>
-        <h2>What are your daily rhythms?</h2>
-        <p class="section-copy">These placeholder questions help us understand shared-space compatibility.</p>
-        <fieldset class="question-block" data-required-group="sleep_schedule">
-          <legend>On most days, which sounds most like you?</legend>
-          <label class="option-card"><input type="radio" name="sleep_schedule" value="early" required /><span><strong>Early bird</strong><small>I wind down early and like quieter nights.</small></span></label>
-          <label class="option-card"><input type="radio" name="sleep_schedule" value="flexible" /><span><strong>Flexible</strong><small>I can adapt to the people and plans around me.</small></span></label>
-          <label class="option-card"><input type="radio" name="sleep_schedule" value="late" /><span><strong>Night owl</strong><small>I often stay up later talking, reading, or working.</small></span></label>
-        </fieldset>
-        <label class="range-field"><span><strong>How tidy do you prefer shared spaces?</strong><output data-range-output="tidiness">3 — somewhere in between</output></span><input type="range" name="tidiness" min="1" max="5" value="3" /></label>
-        <fieldset class="question-block">
-          <legend>How do you usually recharge?</legend>
-          <select name="recharge_style" required><option value="">Choose one</option><option value="alone">Mostly with quiet time alone</option><option value="mix">A mix of alone time and company</option><option value="social">Mostly by being around other people</option></select>
-        </fieldset>
+        <span class="step-label">STEP 3 OF 6 · PERSONALITY INFORMATION</span>
+        <h2>Tell us about your personality.</h2>
+        <p class="section-copy">Choose the point on each scale that feels most accurate for you.</p>
+        <label class="range-field scored-range"><span><strong>How extroverted are you?</strong><output data-range-output="extroversion">3 — balanced</output></span><input type="range" name="extroversion" min="1" max="5" value="3" /><span class="range-ends"><small>1 — Very introverted</small><small>5 — Very extroverted</small></span></label>
+        <label class="range-field scored-range"><span><strong>How organized are you?</strong><output data-range-output="organization">3 — moderately organized</output></span><input type="range" name="organization" min="1" max="5" value="3" /><span class="range-ends"><small>1 — Very relaxed</small><small>5 — Very organized</small></span></label>
       </section>
 
       <section class="survey-section" data-section="3" hidden>
-        <span class="step-label">STEP 4 OF 5</span>
-        <h2>What kind of suite community helps you thrive?</h2>
-        <p class="section-copy">Think about the group dynamic you hope to help create.</p>
-        <fieldset class="question-block">
-          <legend>What matters most to you in a suite? <small>Select up to 3</small></legend>
-          <div class="choice-grid" data-max-choices="3">
-            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="quiet" /><span>Quiet downtime</span></label>
-            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="conversation" /><span>Late-night conversations</span></label>
-            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="activities" /><span>Doing activities together</span></label>
-            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="cultures" /><span>Sharing cultures</span></label>
-            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="independence" /><span>Plenty of independence</span></label>
-            <label class="choice-chip"><input type="checkbox" name="suite_priorities" value="support" /><span>Mutual support</span></label>
-          </div>
-        </fieldset>
-        <label class="field"><span>When a small conflict comes up, what helps you handle it?</span><textarea name="conflict_style" required maxlength="600" rows="4" placeholder="A few honest sentences are plenty."></textarea><small><span data-char-count="conflict_style">0</span>/600</small></label>
-        <label class="field"><span>Anything else you’d like us to consider? <small>(optional)</small></span><textarea name="additional_notes" maxlength="1000" rows="4" placeholder="Share a preference or context that the questions missed."></textarea><small><span data-char-count="additional_notes">0</span>/1000</small></label>
+        <span class="step-label">STEP 4 OF 6 · ROOMMATE PREFERENCES</span>
+        <h2>What room arrangement works for you?</h2>
+        <fieldset class="question-block compact-options"><legend>Do you prefer a single or double room?</legend><div class="choice-grid three-options"><label class="choice-chip"><input type="radio" name="room_type" value="single" required /><span>Single room<br />(no roommate)</span></label><label class="choice-chip"><input type="radio" name="room_type" value="double" /><span>Double room<br />(with roommate)</span></label><label class="choice-chip"><input type="radio" name="room_type" value="no_preference" /><span>I don’t care</span></label></div></fieldset>
+        <label class="field"><span>What time do you usually go to sleep?</span><select name="bedtime_preference" required><option value="">Select a usual bedtime</option><option value="21:00">9:00 PM</option><option value="21:30">9:30 PM</option><option value="22:00">10:00 PM</option><option value="22:30">10:30 PM</option><option value="23:00">11:00 PM</option><option value="23:30">11:30 PM</option><option value="00:00_or_later">12:00 AM or later</option></select></label>
+        <label class="field"><span>How many suitemates do you prefer?</span><input name="preferred_suitemates" type="number" min="0" max="8" required placeholder="Choose from 0 to 8" /></label>
       </section>
 
       <section class="survey-section" data-section="4" hidden>
-        <span class="step-label">STEP 5 OF 5</span>
+        <span class="step-label">STEP 5 OF 6 · LOCATION PREFERENCES</span>
+        <h2>Where would you feel most comfortable?</h2>
+        <fieldset class="question-block compact-options"><legend>Do you prefer a higher or lower floor?</legend><div class="choice-grid three-options"><label class="choice-chip"><input type="radio" name="floor_preference" value="higher" required /><span>Higher floor</span></label><label class="choice-chip"><input type="radio" name="floor_preference" value="lower" /><span>Lower floor</span></label><label class="choice-chip"><input type="radio" name="floor_preference" value="no_preference" /><span>No preference</span></label></div></fieldset>
+        <fieldset class="question-block compact-options"><legend>Do you prefer a specific residential college?</legend><div class="choice-grid three-options"><label class="choice-chip"><input type="radio" name="college_preference" value="pauli_murray" required /><span>Pauli Murray College</span></label><label class="choice-chip"><input type="radio" name="college_preference" value="benjamin_franklin" /><span>Benjamin Franklin College</span></label><label class="choice-chip"><input type="radio" name="college_preference" value="no_preference" /><span>No preference</span></label></div></fieldset>
+        <label class="range-field scored-range"><span><strong>What sound level do you prefer?</strong><output data-range-output="sound_level">3 — moderate</output></span><input type="range" name="sound_level" min="1" max="5" value="3" /><span class="range-ends"><small>1 — Very quiet</small><small>5 — Very loud</small></span></label>
+      </section>
+
+      <section class="survey-section" data-section="5" hidden>
+        <span class="step-label">STEP 6 OF 6</span>
         <h2>Review and submit</h2>
         <p class="section-copy">Check your answers before sending them to SuiteSync.</p>
         <div class="review-list" data-review-list></div>
@@ -219,10 +208,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
           }
         }
       }
-      if (current === 3 && section.querySelectorAll('input[name="suite_priorities"]:checked').length === 0) {
-        showError('Choose at least one thing that matters to you in a suite.');
-        return false;
-      }
       showError();
       return true;
     };
@@ -232,8 +217,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       const data = new FormData(form);
       const labels = {
         preferred_name: 'Preferred name', email: 'Application email', track: 'YYGS track', session: 'YYGS session', age: 'Age', biological_sex: 'Biological sex', pronouns: 'Pronouns', gender_identity: 'Gender identity', ethnicity: 'Ethnicity', religious_belief: 'Religious belief',
-        sleep_schedule: 'Daily rhythm', tidiness: 'Shared-space tidiness', recharge_style: 'Recharge style',
-        suite_priorities: 'Suite priorities', conflict_style: 'Handling conflict', additional_notes: 'Additional notes'
+        extroversion: 'Extroversion', organization: 'Organization', room_type: 'Room preference', bedtime_preference: 'Usual bedtime', preferred_suitemates: 'Preferred number of suitemates',
+        floor_preference: 'Floor preference', college_preference: 'Residential college preference', sound_level: 'Preferred sound level'
       };
       const review = root.querySelector('[data-review-list]');
       if (!(review instanceof HTMLElement)) return;
@@ -289,12 +274,18 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       });
     });
 
-    const range = root.querySelector('input[name="tidiness"]');
-    range?.addEventListener('input', () => {
-      if (!(range instanceof HTMLInputElement)) return;
-      const descriptions = ['very relaxed', 'mostly relaxed', 'somewhere in between', 'usually tidy', 'very tidy'];
-      const output = root.querySelector('[data-range-output="tidiness"]');
-      if (output) output.textContent = `${range.value} — ${descriptions[Number(range.value) - 1]}`;
+    const rangeDescriptions = {
+      extroversion: ['very introverted', 'introverted', 'balanced', 'extroverted', 'very extroverted'],
+      organization: ['very relaxed', 'relaxed', 'moderately organized', 'organized', 'very organized'],
+      sound_level: ['very quiet', 'quiet', 'moderate', 'lively', 'very loud']
+    };
+    root.querySelectorAll('input[type="range"][data-range-field], input[type="range"][name="extroversion"], input[type="range"][name="organization"], input[type="range"][name="sound_level"]').forEach((range) => {
+      range.addEventListener('input', () => {
+        if (!(range instanceof HTMLInputElement)) return;
+        const descriptions = rangeDescriptions[range.name as keyof typeof rangeDescriptions];
+        const output = root.querySelector(`[data-range-output="${range.name}"]`);
+        if (output && descriptions) output.textContent = `${range.value} — ${descriptions[Number(range.value) - 1]}`;
+      });
     });
 
     form?.addEventListener('submit', async (event) => {
@@ -321,12 +312,14 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         gender_identity: String(data.get('gender_identity') ?? ''),
         ethnicity: String(data.get('ethnicity') ?? ''),
         religious_belief: String(data.get('religious_belief') ?? '') || null,
-        sleep_schedule: String(data.get('sleep_schedule') ?? ''),
-        tidiness: Number(data.get('tidiness')),
-        recharge_style: String(data.get('recharge_style') ?? ''),
-        suite_priorities: data.getAll('suite_priorities').map(String),
-        conflict_style: String(data.get('conflict_style') ?? '').trim(),
-        additional_notes: String(data.get('additional_notes') ?? '').trim() || null,
+        extroversion: Number(data.get('extroversion')),
+        organization: Number(data.get('organization')),
+        room_type: String(data.get('room_type') ?? ''),
+        bedtime_preference: String(data.get('bedtime_preference') ?? ''),
+        preferred_suitemates: Number(data.get('preferred_suitemates')),
+        floor_preference: String(data.get('floor_preference') ?? ''),
+        college_preference: String(data.get('college_preference') ?? ''),
+        sound_level: Number(data.get('sound_level')),
         consented_at: new Date().toISOString(),
         survey_version: 1
       };
