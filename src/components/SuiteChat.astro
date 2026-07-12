@@ -1,0 +1,74 @@
+---
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+---
+
+<main class="chat-shell" data-chat-root data-supabase-url={supabaseUrl} data-supabase-key={supabaseKey}>
+  <header class="chat-header"><a href={import.meta.env.BASE_URL}>← SuiteSync home</a><span class="survey-kicker">MY SUITE</span><h1>Meet your suitemates.</h1><p>Once your assignment is released, this is your private space to say hello and get ready for YYGS.</p></header>
+
+  <section class="auth-card" data-chat-auth>
+    <div class="auth-icon">✦</div><span class="step-label">STUDENT SIGN IN</span><h2>Open your suite.</h2>
+    <form data-chat-auth-form>
+      <label class="field"><span>Application email</span><input name="email" type="email" required autocomplete="email" /></label>
+      <label class="field"><span>Password</span><input name="password" type="password" required minlength="8" autocomplete="current-password" /></label>
+      <button class="button primary auth-button" type="submit">Sign in <span>→</span></button>
+    </form>
+    <div class="auth-message" data-chat-auth-message hidden></div>
+  </section>
+
+  <section class="waiting-card" data-chat-waiting hidden><div class="auth-icon">⌛</div><h2>Your suite isn’t ready yet.</h2><p>Your account is connected, but no released suite assignment is available. Check back after matching is complete.</p><button class="button secondary" data-chat-signout>Sign out</button></section>
+
+  <div class="chat-layout" data-chat-layout hidden>
+    <aside class="member-panel"><span class="step-label">YOUR SUITE</span><h2 data-suite-name></h2><p data-suite-location></p><h3>Suitemates</h3><ul data-member-list></ul><button data-chat-signout>Sign out</button></aside>
+    <section class="message-panel">
+      <div class="message-heading"><div><span class="status-dot"></span><strong>Suite chat</strong></div><small>Only your suitemates can see these messages.</small></div>
+      <div class="message-list" data-message-list aria-live="polite"></div>
+      <form class="message-form" data-message-form><label class="sr-only" for="suite-message">Message</label><input id="suite-message" name="message" maxlength="1000" required autocomplete="off" placeholder="Write a message to your suite…" /><button type="submit">Send</button></form>
+      <div class="form-error" data-chat-error hidden></div>
+    </section>
+  </div>
+</main>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+  type Member = { user_id: string | null; preferred_name: string };
+  type Context = { suite: { id: string; name: string; floor: number | null; college: string | null }; members: Member[] };
+  type Message = { id: string; sender_user_id: string; body: string; created_at: string };
+
+  const root = document.querySelector('[data-chat-root]');
+  if (root instanceof HTMLElement) {
+    const client = root.dataset.supabaseUrl && root.dataset.supabaseKey ? createClient(root.dataset.supabaseUrl, root.dataset.supabaseKey) : null;
+    let context: Context | null = null;
+    let currentUserId = '';
+    const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c] ?? c);
+    const show = (name: 'auth' | 'waiting' | 'chat') => {
+      const screens = { auth: '[data-chat-auth]', waiting: '[data-chat-waiting]', chat: '[data-chat-layout]' };
+      Object.entries(screens).forEach(([key, selector]) => { const el = root.querySelector(selector); if (el instanceof HTMLElement) el.hidden = key !== name; });
+    };
+    const renderMessages = (messages: Message[]) => {
+      const list = root.querySelector('[data-message-list]'); if (!(list instanceof HTMLElement) || !context) return;
+      const names = new Map(context.members.map(m => [m.user_id, m.preferred_name]));
+      list.innerHTML = messages.length ? messages.map(m => `<article class="chat-message ${m.sender_user_id === currentUserId ? 'is-mine' : ''}"><div><strong>${escapeHtml(names.get(m.sender_user_id) || 'Suitemate')}</strong><time>${escapeHtml(new Date(m.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</time></div><p>${escapeHtml(m.body)}</p></article>`).join('') : '<p class="empty-state">No messages yet. Be the first to say hello!</p>';
+      list.scrollTop = list.scrollHeight;
+    };
+    const loadChat = async () => {
+      if (!client) return;
+      const { data: { user } } = await client.auth.getUser(); if (!user) { show('auth'); return; }
+      currentUserId = user.id;
+      await client.rpc('claim_my_survey_response');
+      const { data } = await client.rpc('get_my_suite_context');
+      if (!data?.suite) { show('waiting'); return; }
+      context = data as Context; show('chat');
+      const college = context.suite.college === 'pauli_murray' ? 'Pauli Murray' : context.suite.college === 'benjamin_franklin' ? 'Benjamin Franklin' : 'College TBD';
+      const name = root.querySelector('[data-suite-name]'); if (name) name.textContent = context.suite.name;
+      const location = root.querySelector('[data-suite-location]'); if (location) location.textContent = `${college}${context.suite.floor ? ` · Floor ${context.suite.floor}` : ''}`;
+      const members = root.querySelector('[data-member-list]'); if (members) members.innerHTML = context.members.map(m => `<li><span>${escapeHtml(m.preferred_name.slice(0, 1))}</span>${escapeHtml(m.preferred_name)}</li>`).join('');
+      const { data: messages } = await client.from('suite_messages').select('id,sender_user_id,body,created_at').order('created_at'); renderMessages((messages ?? []) as Message[]);
+      client.channel(`suite-${context.suite.id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'suite_messages', filter: `suite_id=eq.${context.suite.id}` }, async () => { const { data: updated } = await client.from('suite_messages').select('id,sender_user_id,body,created_at').order('created_at'); renderMessages((updated ?? []) as Message[]); }).subscribe();
+    };
+    root.querySelector('[data-chat-auth-form]')?.addEventListener('submit', async event => { event.preventDefault(); if (!client || !(event.currentTarget instanceof HTMLFormElement)) return; const data = new FormData(event.currentTarget); const { error } = await client.auth.signInWithPassword({ email: String(data.get('email') ?? '').trim().toLowerCase(), password: String(data.get('password') ?? '') }); const notice = root.querySelector('[data-chat-auth-message]'); if (notice instanceof HTMLElement) { notice.textContent = error ? 'The email or password is incorrect.' : ''; notice.hidden = !error; } if (!error) await loadChat(); });
+    root.querySelectorAll('[data-chat-signout]').forEach(button => button.addEventListener('click', async () => { await client?.auth.signOut(); show('auth'); }));
+    root.querySelector('[data-message-form]')?.addEventListener('submit', async event => { event.preventDefault(); if (!client || !context || !(event.currentTarget instanceof HTMLFormElement)) return; const form = event.currentTarget; const data = new FormData(form); const body = String(data.get('message') ?? '').trim(); if (!body) return; const { error } = await client.from('suite_messages').insert({ suite_id: context.suite.id, sender_user_id: currentUserId, body }); const notice = root.querySelector('[data-chat-error]'); if (notice instanceof HTMLElement) { notice.textContent = error ? 'Your message could not be sent.' : ''; notice.hidden = !error; } if (!error) form.reset(); });
+    if (!client) show('auth'); else void loadChat();
+  }
+</script>
